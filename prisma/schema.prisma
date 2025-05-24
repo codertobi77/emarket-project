@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(uuid())
+  name           String
+  email          String        @unique
+  password       String
+  role           Role          @default(BUYER)
+  location       Location?     
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  session        String?
+
+  // Relations
+  orders         Order[]       @relation("BuyerOrders")
+  soldItems      OrderItem[]   @relation("SellerItems")
+  market         Market[]
+  marketSellers  MarketSellers[]
+
+  @@map("users")
+}
+
+model Market {
+  id          String   @id @default(uuid())
+  name        String
+  location    Location @default(COTONOU)
+  description String?
+  managerId   String   
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  manager   User      @relation(fields: [managerId], references: [id])
+  marketSellers MarketSellers[] 
+
+  @@map("markets")
+}
+
+model MarketSellers {
+  marketId  String @unique
+  market    Market @relation(fields: [marketId], references: [id])
+
+  sellerId String @unique
+  seller   User @relation(fields: [sellerId], references: [id])
+
+  products  Product[]
+
+  @@id([marketId, sellerId])
+  @@map("market_sellers")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Decimal
+  stock       Int      @default(0)
+  image       String?
+  sellerId    String
+  categoryId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  seller      MarketSellers @relation(fields: [sellerId], references: [sellerId])
+  category    Category?   @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  buyerId     String
+  status      OrderStatus @default(PENDING)
+  totalAmount Decimal     @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  items       OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  productId   String
+  sellerId    String
+  quantity    Int
+  unitPrice   Decimal
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  order       Order    @relation(fields: [orderId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+  seller      User     @relation("SellerItems", fields: [sellerId], references: [id])
+
+  @@map("order_items")
+}
+
+enum Role {
+  BUYER
+  SELLER
+  MANAGER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+enum Location {
+  COTONOU
+  BOHICON
+  PORTO_NOVO
+}
