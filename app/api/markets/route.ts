@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, location, description, managerId } = await req.json();
+    const { name, location, description, managerId, image } = await req.json();
 
     if (!name || !location || !description || !managerId) {
       return NextResponse.json(
@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
         location,
         description,
         managerId,
+        image,
       },
     });
 
@@ -105,7 +106,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { name, location, description, managerId } = await req.json();
+    const { name, location, description, managerId , image } = await req.json();
 
     if (!name || !location || !description || !managerId) {
       return NextResponse.json(
@@ -128,6 +129,7 @@ export async function PUT(req: NextRequest) {
         location,
         description,
         managerId,
+        image,
       },
     });
 
@@ -159,15 +161,111 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const market = await prisma.market.delete({
-      where: { id },
+    // Utiliser une transaction Prisma pour s'assurer que toutes les opérations réussissent ou échouent ensemble
+    const result = await prisma.$transaction(async (tx) => {
+      // Vérifier si le marché existe et obtenir tous ses vendeurs
+      const marketExists = await tx.market.findUnique({
+        where: { id },
+        include: {
+          marketSellers: {
+            include: {
+              seller: true
+            }
+          }
+        }
+      });
+
+      if (!marketExists) {
+        throw new Error("Marché non trouvé");
+      }
+
+      // Récupérer les IDs des vendeurs associés à ce marché
+      const sellerIds = marketExists.marketSellers.map(ms => ms.sellerId);
+      console.log(`Suppression du marché ${id} avec ${sellerIds.length} vendeurs associés: ${sellerIds.join(', ')}`);
+
+      // 1. D'abord, supprimer tous les produits associés aux vendeurs du marché
+      // Trouver les produits associés au marché ou à ses vendeurs
+      const relatedProducts = await tx.product.findMany({
+        where: {
+          OR: [
+            { marketId: id },
+            { sellerId: { in: sellerIds } }
+          ]
+        }
+      });
+      
+      console.log(`Suppression de ${relatedProducts.length} produits associés au marché ${id}`);
+      
+      // Supprimer les produits associés
+      if (relatedProducts.length > 0) {
+        const productIds = relatedProducts.map(p => p.id);
+        
+        // D'abord supprimer les éléments de commande liés à ces produits
+        await tx.orderItem.deleteMany({
+          where: {
+            productId: { in: productIds }
+          }
+        });
+        
+        // Ensuite supprimer les produits eux-mêmes
+        await tx.product.deleteMany({
+          where: {
+            id: { in: productIds }
+          }
+        });
+      }
+      
+      // 2. Supprimer les relations marché-vendeurs
+      await tx.$executeRaw`DELETE FROM "market_sellers" WHERE "marketId" = ${id}`;
+      console.log(`Relations marché-vendeurs supprimées pour le marché ${id}`);
+      
+      // 3. Supprimer les vendeurs associés uniquement à ce marché
+      // Vérifier d'abord quels vendeurs ne sont associés qu'à ce marché
+      for (const sellerId of sellerIds) {
+        const otherMarkets = await tx.marketSellers.count({
+          where: {
+            sellerId,
+            marketId: { not: id }
+          }
+        });
+        
+        // Si le vendeur n'est associé à aucun autre marché, le supprimer
+        if (otherMarkets === 0) {
+          console.log(`Suppression du vendeur ${sellerId} qui n'est associé à aucun autre marché`);
+          
+          // Supprimer les commandes liées à ce vendeur
+          await tx.orderItem.deleteMany({
+            where: {
+              sellerId
+            }
+          });
+          
+          // Supprimer le vendeur
+          await tx.user.delete({
+            where: {
+              id: sellerId
+            }
+          });
+        } else {
+          console.log(`Le vendeur ${sellerId} est associé à ${otherMarkets} autres marchés, conservation du compte`);
+        }
+      }
+      
+      // 4. Finalement, supprimer le marché lui-même
+      return await tx.market.delete({
+        where: { id },
+      });
     });
 
-    return NextResponse.json(market);
+    console.log(`Marché ${id} et toutes ses dépendances (produits, vendeurs, relations) supprimés avec succès`);
+    return NextResponse.json({
+      ...result,
+      message: "Marché et toutes ses dépendances supprimés avec succès"
+    });
   } catch (error) {
     console.error("Error deleting market:", error);
     return NextResponse.json(
-      { message: "Erreur lors de la suppression du marché" },
+      { message: `Erreur lors de la suppression du marché: ${error instanceof Error ? error.message : 'Erreur inconnue'}` },
       { status: 500 }
     );
   }

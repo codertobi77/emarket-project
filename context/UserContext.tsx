@@ -1,9 +1,11 @@
 'use client'
 
 import { verifyToken } from '@/lib/auth';
-import React, { createContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useEffect, useState, ReactNode } from 'react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 type User = {
+  image: null;
   id: string;
   name: string;
   email: string;
@@ -13,57 +15,60 @@ type User = {
 
 export type UserContextType = {
   user: User;
+  loading: boolean;
   setUser: (user: User) => void;
 };
 
 export const UserContext = createContext<UserContextType>({
   user: null,
+  loading: true,
   setUser: () => {},
 });
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // Utiliser des hooks standards pour l'état local
+  const [user, setUserState] = useState<User>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  
+  // Utiliser notre hook personnalisé pour la persistance
+  const [storedUser, setStoredUser] = useLocalStorage<User>('user', null);
 
+  // Effet pour initialiser l'utilisateur à partir du localStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      const session = verifyToken(parsedUser.session);
-      if (session) {
-        setUser(parsedUser);
-      } else {
-        localStorage.removeItem('user');
+      try {
+        // Côté client, on fait confiance au token stocké dans localStorage
+        // La vérification se fera par les API routes lors des requêtes authentifiées
+        console.log('Utilisateur chargé depuis localStorage:', storedUser);
+        setUserState(storedUser);
+      } catch (error) {
+        console.error('Erreur lors du chargement de la session:', error);
+        setStoredUser(null);
       }
-      setUser(JSON.parse(storedUser));
     }
-  }, []);
+    // Indiquer que le chargement est terminé
+    setLoading(false);
+  }, [storedUser, setStoredUser]);
 
-  const updateUser = (newUser: User | null) => {
-    setUser(newUser);
+  // Fonction de mise à jour de l'utilisateur
+  const setUser = (newUser: User | null) => {
     if (newUser) {
-      const session = verifyToken(newUser.session);
-      if (session) {
-        localStorage.setItem('user', JSON.stringify(newUser));
-      } else {
-        localStorage.removeItem('user');
-      }
-      localStorage.setItem('user', JSON.stringify(newUser));
+      // Nous faisons confiance aux données utilisateur fournies
+      // La validation du token se fait au niveau des API routes
+      console.log('Mise à jour utilisateur:', newUser);
+      setUserState(newUser);
+      setStoredUser(newUser);
     } else {
-      localStorage.removeItem('user');
+      // Déconnexion
+      console.log('Déconnexion utilisateur');
+      setUserState(null);
+      setStoredUser(null);
     }
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser: updateUser }}>
+    <UserContext.Provider value={{ user, loading, setUser }}>
       {children}
     </UserContext.Provider>
   );
 };
-
-// export const useUser = (): UserContextType => {
-//   const context = useContext(UserContext);
-//   if (!context) {
-//     throw new Error('useUser must be used within a UserProvider');
-//   }
-//   return context;
-// };

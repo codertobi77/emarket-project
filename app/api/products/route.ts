@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { Jwt, JwtPayload } from "jsonwebtoken";
+import { log } from "node:util";
 
 export const dynamic = 'force-dynamic';
 export const getStaticProps = async () => {
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, description, price, stock, category } = await req.json();
+    const { name, description, price, stock, category, image } = await req.json();
 
     // Check if category exists
     const categoryExists = await prisma.category.findUnique({
@@ -85,7 +86,20 @@ export async function POST(req: NextRequest) {
     //     { message: "Market does not exist" },
     //     { status: 404 }
     //   );
-    // }
+    // }    
+
+    const seller = await prisma.marketSellers.findUnique({
+      where: { sellerId: session.id },
+      select: { marketId: true },
+    })
+    console.log(seller);
+
+    if (!seller) {
+      return NextResponse.json(
+        { message: "User is not a seller" },
+        { status: 404 }
+      );
+    }
 
     const product = await prisma.product.create({
       data: {
@@ -93,12 +107,15 @@ export async function POST(req: NextRequest) {
         description,
         price,
         stock,
+        image,
         seller: {
-          connect: { sellerId: session.id },
+          connect: { sellerId: session.id, marketId: seller.marketId },
         },
+        // marketId: seller.marketId,
         category: {
           connect: { id: category },
         },
+        
       },
     });
 
@@ -122,7 +139,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const { id, name, description, price, stock, category, marketId } = await req.json();
+    const { id, name, description, price, stock, image, category, marketId } = await req.json();
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -134,9 +151,12 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    console.log(image);
+    
+
     // Check if category exists
     const categoryExists = await prisma.category.findUnique({
-      where: { id: category },
+      where: { id: category.id },
     });
     if (!categoryExists) {
       return NextResponse.json(
@@ -163,8 +183,9 @@ export async function PATCH(req: NextRequest) {
         description: description || product.description,
         price: price || product.price,
         stock: stock || product.stock,
+        image: image,
         category: {
-          connect: { id: category },
+          connect: { id: category.id },
         },
         // marketId,
       },

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
 
@@ -10,32 +10,35 @@ type RoleProtectedProps = {
 };
 
 export default function RoleProtected({ allowedRoles, children }: RoleProtectedProps) {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const pathname = usePathname();
   const router = useRouter();
-  const [isUserLoaded, setIsUserLoaded] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setIsUserLoaded(true);
+    // Attendre que le chargement de l'utilisateur soit terminé avant de décider de rediriger
+    if (!loading) {
+      if (pathname !== '/auth/login' && !user) {
+        // Non connecté, rediriger vers login
+        router.push("/auth/login");
+        return;
+      }
+      if (pathname !== '/auth/login' && user && !allowedRoles.includes(user.role)) {
+        // Connecté mais rôle non autorisé, rediriger vers page non autorisée ou accueil
+        router.push("/");
+      }
     }
-    if (pathname !== '/auth/login' && !user) {
-      // Not logged in, redirect to login
-      router.push("/auth/login");
-      return;
-    }
-    if (pathname !== '/auth/login' && !allowedRoles.includes(user.role)) {
-      // Logged in but role not allowed, redirect to unauthorized page or home
-      router.push("/");
-    }
-  }, [user, allowedRoles, router, pathname]);
+  }, [user, loading, allowedRoles, router, pathname]);
 
-  if (!isUserLoaded) {
-    return null; // Or a loading spinner
+  // Afficher un indicateur de chargement pendant le chargement de l'utilisateur
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-900"></div>
+    </div>;
   }
 
+  // Si non connecté ou rôle non autorisé, ne rien afficher
   if (!user || !allowedRoles.includes(user.role)) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return <>{children}</>;

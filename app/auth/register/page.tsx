@@ -35,7 +35,7 @@ const formSchema = z.object({
   confirmPassword: z.string().min(6, { message: "Le mot de passe doit contenir au moins 6 caractères" }),
   role: z.enum(["BUYER", "SELLER", "MANAGER", "ADMIN"]),
   marketId: z.string().optional(),
-  location: z.enum(["COTONOU", "BOHICON", "PORTO-NOVO"]),
+  location: z.enum(["COTONOU", "BOHICON", "PORTO-NOVO"]).optional(),
 }).refine((data) => {
   if (data.role === "SELLER") {
     return data.marketId !== undefined;
@@ -66,7 +66,7 @@ export default function RegisterPage() {
       confirmPassword: "",
       role: "BUYER",
       marketId: "",
-      location: "",
+      location: undefined,
     },
   });
 
@@ -160,11 +160,19 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Localisation</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          defaultValue={field.value}
-                          placeholder="Saisissez votre localisation"
-                        />
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez votre localisation" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="COTONOU">Cotonou</SelectItem>
+                            <SelectItem value="BOHICON">Bohicon</SelectItem>
+                            <SelectItem value="PORTO-NOVO">Porto-Novo</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

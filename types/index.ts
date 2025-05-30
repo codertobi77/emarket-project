@@ -1,8 +1,11 @@
+import { Category } from "@prisma/client";
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: 'BUYER' | 'SELLER' | 'MANAGER' | 'ADMIN';
+  image?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,7 +16,8 @@ export interface Product {
   description: string;
   price: number;
   stock: number;
-  category: string;
+  image: string;
+  category: Category;
   // image: string;
   sellerId: string;
   marketId: string;
@@ -27,6 +31,8 @@ export interface Market {
   location: string | 'COTONOU' | 'BOHICON' | 'PORTO-NOVO';
   description: string;
   managerId: string;
+  manager: User;
+  image?: string; // Ajout de la propriété image
   marketSellers: MarketSeller[];
   createdAt: Date;
   updatedAt: Date;

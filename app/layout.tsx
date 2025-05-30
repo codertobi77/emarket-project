@@ -4,7 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Benin Market Management System',
+  title: 'e-Asi | Benin Market Management System',
   description: 'A comprehensive market management system for Benin',
 };
 

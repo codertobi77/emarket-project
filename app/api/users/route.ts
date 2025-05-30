@@ -5,6 +5,10 @@ import { getSession } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
+  const searchParams = new URLSearchParams(req.nextUrl.search);
+
+  const marketId = searchParams.get("marketId");
+  const sellerId = searchParams.get("sellerId");
 
   try {
     const users = await prisma.user.findMany({
@@ -15,8 +19,13 @@ export async function GET(req: NextRequest) {
         role: true,
         location: true,
         market: true,
+        marketSellers: true,
         createdAt: true,
         updatedAt: true,
+      },
+      where: {
+        ...(marketId && { marketSellers: { some: { marketId: marketId as string } } }),
+        ...(sellerId && { marketSellers: { some: { sellerId: sellerId as string } } }),
       },
     });
 
@@ -37,27 +46,54 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { name, email, role } = await req.json();
+    const { name, email, role, image, password } = await req.json();
 
-    // Validate input
-    if (name === undefined || email === undefined || role === undefined) {
-      return NextResponse.json({ message: "Tous les champs sont requis" }, { status: 400 });
+    // Préparer les données à mettre à jour (uniquement les champs fournis)
+    const updateData: any = {};
+    
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (role !== undefined) {
+      if (!['BUYER', 'SELLER', 'MANAGER', 'ADMIN'].includes(role)) {
+        return NextResponse.json({ message: "Rôle invalide" }, { status: 400 });
+      }
+      updateData.role = role;
+    }
+    // Vérifier si le champ image est supporté dans le modèle User
+    try {
+      // Tentative de validation du modèle User
+      const existingUser = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: { id: true }
+      });
+      
+      if (existingUser && image !== undefined) {
+        console.log("Mise à jour de l'image de profil:", image);
+        updateData.image = image;
+      }
+    } catch (error) {
+      console.warn("Le champ 'image' n'est peut-être pas disponible dans le modèle User:", error);
+    }
+    
+    if (password !== undefined && password.trim() !== '') {
+      const bcrypt = require('bcryptjs');
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
-    if (!["BUYER", "SELLER", "MANAGER", "ADMIN"].includes(role)) {
-      return NextResponse.json({ message: "Rôle invalide" }, { status: 400 });
+    // Vérifier si des données à mettre à jour ont été fournies
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ message: "Aucune donnée à mettre à jour fournie" }, { status: 400 });
     }
 
     const user = await prisma.user.update({
       where: { id: session.id },
-      data: {
-        name,
-        email,
-        role,
-      },
+      data: updateData,
     });
 
-    return NextResponse.json(user);
+    // Ne pas retourner le mot de passe et la session dans la réponse
+    const { password: _, session: __, ...userWithoutSensitiveInfo } = user;
+
+    return NextResponse.json(userWithoutSensitiveInfo);
   } catch (error) {
     console.error("Error updating user:", error);
     return NextResponse.json({
@@ -66,4 +102,118 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+export async function DELETE(req: NextRequest) {
+  const searchParams = new URLSearchParams(req.nextUrl.search);
+  const userId = searchParams.get("id");
+
+  // Vérifier si l'ID de l'utilisateur est fourni
+  if (!userId) {
+    return NextResponse.json(
+      { message: "ID de l'utilisateur non fourni" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    // Vérifier si l'utilisateur existe
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { message: "Utilisateur non trouvé" },
+        { status: 404 }
+      );
+    }
+
+    try {
+      // Supprimer toutes les relations associées à l'utilisateur selon son rôle
+      if (user.role === "SELLER") {
+        // 1. D'abord, trouver les produits associés au vendeur via MarketSellers
+        const sellerMarkets = await prisma.marketSellers.findMany({
+          where: { sellerId: userId },
+        });
+        
+        // 2. Pour chaque relation vendeur-marché, supprimer les produits associés
+        for (const sellerMarket of sellerMarkets) {
+          await prisma.product.deleteMany({
+            where: { 
+              sellerId: userId,
+              marketId: sellerMarket.marketId 
+            },
+          });
+        }
+        
+        // 3. Supprimer les OrderItems du vendeur
+        await prisma.orderItem.deleteMany({
+          where: { sellerId: userId },
+        });
+        
+        // 4. Supprimer les relations MarketSellers
+        await prisma.marketSellers.deleteMany({
+          where: { sellerId: userId },
+        });
+      } else if (user.role === "MANAGER") {
+        // Vérifier si un autre manager est disponible pour prendre la relève
+        const anotherManager = await prisma.user.findFirst({
+          where: { 
+            role: "MANAGER",
+            id: { not: userId }
+          },
+        });
+        
+        if (anotherManager) {
+          // Réassigner les marchés à un autre manager
+          await prisma.market.updateMany({
+            where: { managerId: userId },
+            data: { managerId: anotherManager.id },
+          });
+        } else {
+          // Si aucun autre manager n'est disponible, nous devons informer l'admin
+          // En attendant, on peut empêcher la suppression
+          return NextResponse.json(
+            { message: "Impossible de supprimer ce gestionnaire car il gère des marchés et aucun autre gestionnaire n'est disponible pour prendre la relève." },
+            { status: 400 }
+          );
+        }
+      }
+      
+      // Supprimer les commandes créées par cet utilisateur (acheteur)
+      if (user.role === "BUYER" || user.role === "SELLER") { // Les vendeurs peuvent aussi être acheteurs
+        await prisma.orderItem.deleteMany({
+          where: { 
+            order: { buyerId: userId }
+          },
+        });
+        
+        await prisma.order.deleteMany({
+          where: { buyerId: userId },
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression des relations:", error);
+      return NextResponse.json(
+        { message: "Erreur lors de la suppression des relations: " + error },
+        { status: 500 }
+      );
+    }
+
+    // Supprimer l'utilisateur lui-même
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json(
+      { message: "Utilisateur supprimé avec succès" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'utilisateur:", error);
+    return NextResponse.json(
+      { message: "Erreur lors de la suppression de l'utilisateur: " + error },
+      { status: 500 }
+    );
+  }
+}
 

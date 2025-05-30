@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ShoppingBag, Package, Store, Settings } from "lucide-react";
-import { ModeToggle } from "./mode-toggle";
 
 interface NavProps {
   userRole?: 'BUYER' | 'SELLER' | 'MANAGER' | 'ADMIN' | string | null;
@@ -68,7 +67,6 @@ export function MainNav({ userRole }: NavProps) {
           </Link>
         ))}
       <div className="ml-auto">
-        <ModeToggle />
       </div>
     </nav>
   );

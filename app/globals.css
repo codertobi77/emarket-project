@@ -4,7 +4,7 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
+  --background-start-rgb: 197, 205, 197;
   --background-end-rgb: 255, 255, 255;
 }
 
@@ -16,17 +16,29 @@
   }
 }
 
+/* CSS HSL */
+/* --eerie-black: hsla(210, 11%, 15%, 1);
+--white: hsla(0, 0%, 100%, 1);
+--alice-blue: hsla(216, 42%, 95%, 1);
+--charcoal: hsla(213, 15%, 32%, 1);
+--alice-blue-2: hsla(211, 73%, 91%, 1);
+--black: hsla(0, 0%, 0%, 1);
+--yale-blue: hsla(210, 82%, 22%, 1);
+--gamboge: hsla(35, 90%, 55%, 1);
+--hunyadi-yellow: hsla(35, 85%, 61%, 1);
+--oxford-blue: hsla(211, 83%, 16%, 1); */
+
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
+    --foreground: 210 11% 15%;
+    --card: 216 42% 95%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 211 83% 16%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
+    --secondary: 35 90% 55%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
@@ -80,3 +92,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* CSS HEX
+$ash-gray: rgba(197, 205, 197, 1);
+$raisin-black: rgba(29, 36, 52, 1);
+$black-bean: rgba(53, 25, 17, 1);
+$white: rgba(255, 255, 255, 1);
+$gunmetal: rgba(42, 48, 53, 1); */

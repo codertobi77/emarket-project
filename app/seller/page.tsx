@@ -37,6 +37,7 @@ export default function SellerDashboardPage() {
     description: "",
     price: "",
     stock: 0,
+    image: "",
     category: "",
     // image: "",
     // marketId: "",
@@ -56,11 +57,17 @@ export default function SellerDashboardPage() {
     try {
       const response = await fetch("/api/products");
       const data = await response.json();
+      console.log('Produits récupérés depuis l\'API dans seller:', data);
+      // Vérifier les chemins d'images
+      data.forEach((product: Product) => {
+        console.log(`Seller - Produit ${product.name} - Chemin d'image original:`, product.image);
+      });
       setProducts(data || []);
     } catch (error) {
       console.error("Error fetching products:", error);
     }
   };
+
 
   const fetchCategories = async () => {
     try {
@@ -91,6 +98,7 @@ export default function SellerDashboardPage() {
           description: "",
           price: "",
           stock: 0,
+          image: "",
           category: "",
           // marketId: "",
         });
@@ -250,16 +258,33 @@ export default function SellerDashboardPage() {
                     ))}
                   </Select> */}
                 </div>
-                {/* <div>
-                  <Label htmlFor="image">URL de l'image</Label>
+                <div>
+                  <Label htmlFor="image">Image</Label>
                   <Input
                     id="image"
-                    value={newProduct.image}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, image: e.target.value })
-                    }
+                    type="file"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        formData.append("folder", 'products-img');
+                        fetch("/api/upload", {
+                          method: "POST",
+                          body: formData,
+                        })
+                          .then((res) => res.json())
+                          .then((data) => {
+                            setNewProduct({
+                              ...newProduct,
+                              image: `public/assets/products-img/${data.filename}`,
+                            });
+                          })
+                          .catch((error) => console.error(error));
+                      }
+                    }}
                   />
-                </div> */}
+                </div>
                 <Button type="submit" className="w-full">
                   Ajouter le produit
                 </Button>
@@ -329,9 +354,9 @@ export default function SellerDashboardPage() {
               <div>
                 <Label>Catégorie</Label>
                 <Select
-                  value={productToEdit?.category || ""}
+                  value={productToEdit?.category.id || ""}
                   onValueChange={(value) =>
-                    setProductToEdit({ ...productToEdit, category: value } as Product)
+                    setProductToEdit({ ...productToEdit, category: value } as unknown as Product)
                   }
                 >
                   <SelectTrigger>
@@ -346,6 +371,37 @@ export default function SellerDashboardPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                  <Label htmlFor="image">Image</Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        formData.append("folder", 'products-img');
+                        // const formData = {
+                        //   image: file,
+                        //   folder: 'products-img',
+                        // }
+                        fetch("/api/upload", {
+                          method: "POST",
+                          body: formData,
+                        })
+                          .then((res) => res.json())
+                          .then((data) => {
+                            setProductToEdit({
+                              ...productToEdit,
+                              image: `/products-img/${data.filename}`,
+                            } as Product);
+                          })
+                          .catch((error) => console.error(error));
+                      }
+                    }}
+                  />
+                </div>
               <Button type="submit" className="w-full">
                 Enregistrer les modifications
               </Button>
@@ -386,8 +442,8 @@ export default function SellerDashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Produit</TableHead>
-                <TableHead>Catégorie</TableHead>
+              <TableHead>Produit</TableHead>
+              <TableHead>Catégorie</TableHead>
                 <TableHead>Prix</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Actions</TableHead>
@@ -398,11 +454,23 @@ export default function SellerDashboardPage() {
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      {/* <img
-                        src={product.image || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"}
+                      <img
+                        src={product.image
+                          ? product.image.startsWith('/products-img/') 
+                            ? `/assets${product.image}` 
+                            : product.image.includes('public/assets/') 
+                              ? `/${product.image.split('public/')[1]}`
+                              : product.image.includes('assets/') 
+                                ? `/${product.image}` 
+                                : `/assets/products-img/${product.image.split('/').pop()}`
+                          : "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"}
                         alt={product.name}
                         className="w-12 h-12 rounded object-cover"
-                      /> */}
+                        onError={(e) => {
+                          console.error(`Erreur de chargement de l'image pour ${product.name}:`, product.image);
+                          e.currentTarget.src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
+                        }}
+                      />
                       <div>
                         <p className="font-medium">{product.name}</p>
                         <p className="text-sm text-muted-foreground">
@@ -411,7 +479,7 @@ export default function SellerDashboardPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{product.category}</TableCell>
+                  <TableCell>{product.category.name}</TableCell>
                   <TableCell>{product.price} FCFA</TableCell>
                   <TableCell>{product.stock}</TableCell>
                   <TableCell>
