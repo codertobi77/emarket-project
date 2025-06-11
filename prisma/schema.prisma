@@ -21,6 +21,7 @@ model User {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   session        String?
+  isCertified    Boolean     @default(false)
 
   // Relations
   orders         Order[]       @relation("BuyerOrders")

@@ -5,6 +5,37 @@ import { JwtPayload } from "jsonwebtoken";
 
 export async function GET(req: NextRequest) {
   try {
+
+    const marketId = req.nextUrl.searchParams.get('marketId');
+    if (marketId) {
+      const market = await prisma.market.findUnique({
+        where: {
+          id: marketId,
+        },
+        include: {
+          manager: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          marketSellers: {
+            select: {
+              seller: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      return NextResponse.json(market);
+    }
+    
     const whereParam = req.nextUrl.searchParams.get('where');
     const where = whereParam ? JSON.parse(whereParam) : {};
 

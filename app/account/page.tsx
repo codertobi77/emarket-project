@@ -28,13 +28,17 @@ export default function AccountPage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [isCertified, setIsCertified] = useState(false);
   
   // Initialiser les données du formulaire quand l'utilisateur est chargé
   useEffect(() => {
     if (user) {
+      console.log('User image path:', user.image);
       setName(user.name);
       setEmail(user.email);
       setProfileImage(user.image || null);
+      setIsCertified(!!user.isCertified);
+      console.log('Profile image set to:', user.image || null);
     }
   }, [user]);
 
@@ -85,9 +89,11 @@ export default function AccountPage() {
   };
   
   const handleImageUploaded = async (imagePath: string) => {
+    console.log('handleImageUploaded - Image path received:', imagePath);
     setProfileImage(imagePath);
     
     try {
+      console.log('handleImageUploaded - Sending image path to API:', imagePath);
       const response = await fetch("/api/users", {
         method: "PATCH",
         headers: {
@@ -139,7 +145,15 @@ export default function AccountPage() {
               onImageUploaded={handleImageUploaded} 
             />
             <div>
-              <h1 className="text-3xl font-bold">{name || 'Mon compte'}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold">{name || 'Mon compte'}</h1>
+                {isCertified && (
+                  <Badge variant="outline" className="flex items-center gap-1 text-xs border-emerald-500 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400">
+                    <ShieldCheck className="h-4 w-4 mr-1 text-emerald-500" />
+                    Certifié
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="text-xs">{user?.role}</Badge>
                 {user?.role === 'SELLER' && (
@@ -151,15 +165,34 @@ export default function AccountPage() {
         </div>
         
         {/* Bannière pour les vendeurs */}
-        {user?.role === 'SELLER' && (
+        {(user?.role === 'SELLER' && !isCertified) && (
           <Alert className="mb-6 bg-primary/10 border-primary/20">
             <ShieldCheck className="h-5 w-5 text-primary" />
             <AlertTitle className="text-primary font-medium">Certification de vendeur disponible</AlertTitle>
-            <AlertDescription className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <p>Améliorez votre visibilité et gagnez la confiance des acheteurs en devenant un vendeur certifié.</p>
+            <AlertDescription className="flex flex-col space-y-2">
+              <p>Améliorez votre visibilité et gagnez la confiance des acheteurs en devenant un vendeur certifié.</p>
+              <div className="mt-2">
+                <CertifiedSellerDialog 
+                  onStartProcess={handleStartCertification} 
+                  isCertified={isCertified}
+                />
               </div>
-              <CertifiedSellerDialog onStartProcess={handleStartCertification} />
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {user?.role === 'SELLER' && isCertified && (
+          <Alert className="mb-6 bg-green-50 border-green-200">
+            <ShieldCheck className="h-5 w-5 text-green-600" />
+            <AlertTitle className="text-green-800 font-medium">Vendeur Certifié</AlertTitle>
+            <AlertDescription className="flex flex-col space-y-2">
+              <p>Félicitations ! Votre compte est certifié. Profitez de tous les avantages des vendeurs certifiés.</p>
+              <div className="mt-2">
+                <CertifiedSellerDialog 
+                  onStartProcess={handleStartCertification}
+                  isCertified={isCertified}
+                />
+              </div>
             </AlertDescription>
           </Alert>
         )}

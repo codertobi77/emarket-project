@@ -47,7 +47,7 @@ export const getSession = (req: NextRequest) => {
   }
 
   const session = verifyToken(token);
-  return session;
+  return session; 
 };
 
 export const requireAuth = (handler: any) => {

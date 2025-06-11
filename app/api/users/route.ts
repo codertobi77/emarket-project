@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         email: true,
+        image: true,
         role: true,
         location: true,
         market: true,
@@ -46,7 +47,16 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { name, email, role, image, password } = await req.json();
+    const { id, name, email, role, image, password } = await req.json();
+    
+    // Déterminer l'ID de l'utilisateur à mettre à jour
+    // Si un admin fournit un userId, utiliser celui-là, sinon utiliser l'ID de session
+    const targetUserId = session.role === 'ADMIN' && id ? id : session.id;
+    
+    // Si un utilisateur non-admin tente de modifier un autre utilisateur
+    if (targetUserId !== session.id && session.role !== 'ADMIN') {
+      return NextResponse.json({ message: "Non autorisé à modifier cet utilisateur" }, { status: 403 });
+    }
 
     // Préparer les données à mettre à jour (uniquement les champs fournis)
     const updateData: any = {};
@@ -54,22 +64,41 @@ export async function PATCH(req: NextRequest) {
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) updateData.email = email;
     if (role !== undefined) {
+      // Seul un admin peut changer les rôles
+      if (session.role !== 'ADMIN') {
+        return NextResponse.json({ message: "Seul un administrateur peut modifier les rôles" }, { status: 403 });
+      }
+      
       if (!['BUYER', 'SELLER', 'MANAGER', 'ADMIN'].includes(role)) {
         return NextResponse.json({ message: "Rôle invalide" }, { status: 400 });
       }
       updateData.role = role;
     }
+    
     // Vérifier si le champ image est supporté dans le modèle User
     try {
       // Tentative de validation du modèle User
       const existingUser = await prisma.user.findUnique({
-        where: { id: session.id },
+        where: { id: targetUserId },
         select: { id: true }
       });
       
       if (existingUser && image !== undefined) {
-        console.log("Mise à jour de l'image de profil:", image);
-        updateData.image = image;
+        console.log("Mise à jour de l'image de profil - Chemin original:", image);
+        
+        // S'assurer que le chemin de l'image est au format standard attendu par l'application
+        // Ce format est 'public/assets/users-img/filename.ext' pour être cohérent avec l'API d'upload
+        let normalizedImagePath = image;
+        
+        // Si le chemin ne contient pas 'public/assets/' et n'est pas une URL externe, le normaliser
+        if (!image.includes('public/assets/') && !image.startsWith('http')) {
+          // Si c'est juste un nom de fichier ou un chemin relatif, le convertir au format standard
+          const filename = image.split('/').pop() || image;
+          normalizedImagePath = `public/assets/users-img/${filename}`;
+          console.log("Chemin d'image normalisé:", normalizedImagePath);
+        }
+        
+        updateData.image = normalizedImagePath;
       }
     } catch (error) {
       console.warn("Le champ 'image' n'est peut-être pas disponible dans le modèle User:", error);
@@ -86,7 +115,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const user = await prisma.user.update({
-      where: { id: session.id },
+      where: { id: targetUserId },
       data: updateData,
     });
 

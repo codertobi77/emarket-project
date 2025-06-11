@@ -26,7 +26,9 @@ import {
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ShoppingBag } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Market } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
@@ -55,6 +57,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [markets, setMarkets] = useState<Market[]>([]);
+  const { toast } = useToast();
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -95,6 +98,10 @@ export default function RegisterPage() {
       });
       
       if (response.ok) {
+        toast({
+          title: "Inscription réussie",
+          description: "Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.",
+        });
         router.push("/auth/login");
       } else {
         const data = await response.json();
@@ -102,7 +109,11 @@ export default function RegisterPage() {
       }
     } catch (error) {
       console.error("Registration error:", error);
-      // Handle error
+      toast({
+        title: "Erreur d'inscription",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'inscription",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -111,47 +122,47 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 flex items-center justify-center py-12">
-        <div className="mx-auto w-full max-w-md space-y-6 p-6 bg-card rounded-lg shadow-md">
-          <div className="space-y-2 text-center">
+      <main className="flex-1 flex items-center justify-center py-12 bg-muted/40">
+        <Card className="mx-auto w-full max-w-md">
+          <CardHeader className="text-center">
             <div className="flex justify-center">
               <ShoppingBag className="h-10 w-10 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold">Créer un compte</h1>
-            <p className="text-muted-foreground">
+            <CardTitle className="text-3xl font-bold">Créer un compte</CardTitle>
+            <CardDescription>
               Inscrivez-vous pour accéder à la plateforme
-            </p>
-          </div>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom complet</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="nom@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom complet</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="nom@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -179,78 +190,53 @@ export default function RegisterPage() {
                   )}
                 />
               
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mot de passe</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmer le mot de passe</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rôle</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un rôle" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="BUYER">Acheteur</SelectItem>
-                        <SelectItem value="SELLER">Vendeur</SelectItem>
-                        <SelectItem value="MANAGER">Gestionnaire de marché</SelectItem>
-                        <SelectItem value="ADMIN">Administrateur</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {form.getValues('role') === "SELLER" && (
                 <FormField
                   control={form.control}
-                  name="marketId"
+                  name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Marché</FormLabel>
+                      <FormLabel>Mot de passe</FormLabel>
                       <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionnez un marché" />
-                            </SelectTrigger>
-                          </FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmer le mot de passe</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rôle</FormLabel>
+                      <FormControl>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez votre rôle" />
+                          </SelectTrigger>
                           <SelectContent>
-                            {markets.map((market) => (
-                              <SelectItem key={market.id} value={market.id}>
-                                {market.name}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="BUYER">Acheteur</SelectItem>
+                            <SelectItem value="SELLER">Vendeur</SelectItem>
+                            {/* <SelectItem value="MANAGER">Manager</SelectItem> */}
+                            {/* <SelectItem value="ADMIN">Admin</SelectItem> */}
                           </SelectContent>
                         </Select>
                       </FormControl>
@@ -258,22 +244,53 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-              )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Inscription en cours..." : "S'inscrire"}
-              </Button>
-            </form>
-          </Form>
-          
-          <div className="text-center text-sm">
-            <p className="text-muted-foreground">
-              Vous avez déjà un compte?{" "}
-              <Link href="/auth/login" className="text-primary hover:underline">
-                Se connecter
-              </Link>
-            </p>
-          </div>
-        </div>
+
+                {form.watch("role") === "SELLER" && (
+                  <FormField
+                    control={form.control}
+                    name="marketId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Marché</FormLabel>
+                        <FormControl>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            value={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez votre marché" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {markets.map((market) => (
+                                <SelectItem key={market.id} value={market.id}>
+                                  {market.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Création du compte..." : "Créer un compte"}
+                </Button>
+              </form>
+            </Form>
+            
+            <div className="text-center text-sm">
+              <p className="text-muted-foreground">
+                Vous avez déjà un compte?{" "}
+                <Link href="/auth/login" className="text-primary hover:underline">
+                  Se connecter
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </main>
       <Footer />
     </div>

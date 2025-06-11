@@ -149,20 +149,30 @@ export async function PATCH(req: NextRequest) {
         { message: "Product does not exist" },
         { status: 404 }
       );
-    }
+    }    
 
-    console.log(image);
-    
+    // Only update category if it's provided and has an id
+    let updateData: any = {
+      name: name || product.name,
+      description: description || product.description,
+      price: price || product.price,
+      stock: stock ?? product.stock,
+      image: image || product.image,
+    };
 
-    // Check if category exists
-    const categoryExists = await prisma.category.findUnique({
-      where: { id: category.id },
-    });
-    if (!categoryExists) {
-      return NextResponse.json(
-        { message: "Category does not exist" },
-        { status: 404 }
-      );
+    if (category?.id) {
+      const categoryExists = await prisma.category.findUnique({
+        where: { id: category.id },
+      });
+      if (!categoryExists) {
+        return NextResponse.json(
+          { message: "Category does not exist" },
+          { status: 404 }
+        );
+      }
+      updateData.category = {
+        connect: { id: category.id },
+      };
     }
 
     // Check if market exists
@@ -178,17 +188,7 @@ export async function PATCH(req: NextRequest) {
 
     const updatedProduct = await prisma.product.update({
       where: { id },
-      data: {
-        name: name || product.name,
-        description: description || product.description,
-        price: price || product.price,
-        stock: stock || product.stock,
-        image: image,
-        category: {
-          connect: { id: category.id },
-        },
-        // marketId,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updatedProduct);

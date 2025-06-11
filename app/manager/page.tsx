@@ -27,34 +27,33 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Market, Product } from "@/types";
-import {
-  BarChart,
-  Store,
-  Users,
-  ShoppingBag,
-  TrendingUp,
-  Package,
-  Plus, 
-  Edit, 
-  Trash,
-} from "lucide-react";
+import { Category } from "@prisma/client";
+import { useUser } from "@/hooks/useUser";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Category } from "@prisma/client";
-import { useUser } from "@/hooks/useUser";
+import { BarChart, Store, Users, ShoppingBag, TrendingUp, Package, Plus, Edit, Trash } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
 export default function ManagerDashboardPage() {
   const { user } = useUser();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   const [newCategory, setNewCategory] = useState({
-      name: "",
-      description: "",
-    });
+    name: "",
+    description: "",
+  });
+
+  // Calcul des statistiques
+  const totalMarkets = markets.length;
+  const totalProducts = products.length;
+  const totalCategories = categories.length;
 
   useEffect(() => {
     fetchMarkets();
@@ -63,33 +62,54 @@ export default function ManagerDashboardPage() {
   }, []);
 
   const fetchMarkets = async () => {
+    setIsLoading(true);
     const where = user?.role === "MANAGER" ? { managerId: user?.id } : {};
     try {
       const response = await fetch(`/api/markets?where=${JSON.stringify(where)}`);
+      if (!response.ok) throw new Error("Erreur lors du chargement des marchés");
       const data = await response.json();
       setMarkets(data);
     } catch (error) {
       console.error("Error fetching markets:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les marchés",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchProducts = async () => {
     try {
       const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Erreur lors du chargement des produits");
       const data = await response.json();
       setProducts(data);
     } catch (error) {
       console.error("Error fetching products:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les produits",
+        variant: "destructive",
+      });
     }
   };
 
   const fetchCategories = async () => {
     try {
       const response = await fetch("/api/categories");
+      if (!response.ok) throw new Error("Erreur lors du chargement des catégories");
       const data = await response.json();
       setCategories(data);
     } catch (error) {
       console.error("Error fetching categories:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les catégories",
+        variant: "destructive",
+      });
     }
   };
 
@@ -111,246 +131,282 @@ export default function ManagerDashboardPage() {
           name: "",
           description: "",
         });
+        toast({
+          title: "Succès",
+          description: "La catégorie a été ajoutée avec succès",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erreur lors de l'ajout de la catégorie");
       }
     } catch (error) {
       console.error("Error adding category:", error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'ajout de la catégorie",
+        variant: "destructive",
+      });
     }
   };
 
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ? Cette action est irréversible.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        fetchCategories();
+        toast({
+          title: "Succès",
+          description: "La catégorie a été supprimée avec succès",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la suppression de la catégorie');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: 'Erreur',
+        description: error instanceof Error ? error.message : 'Une erreur est survenue lors de la suppression',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Affichage du chargement
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
+        <Header />
+        <main className="flex-1 container py-8 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground">Chargement des données...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
       <Header />
       <main className="flex-1 container py-8">
-        <h1 className="text-3xl font-bold mb-8">Tableau de bord gestionnaire</h1>
-
-        <div className="flex justify-between items-center mb-8">
-                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Ajouter une catégorie 
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Ajouter une nouvelle catégorie</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleAddCategory} className="space-y-4">
-                          <div>
-                            <Label htmlFor="name">Nom de la catégorie</Label>
-                            <Input
-                              id="name"
-                              value={newCategory.name}
-                              onChange={(e) =>
-                                setNewCategory({ ...newCategory, name: e.target.value })
-                              }
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                              id="description"
-                              value={newCategory.description}
-                              onChange={(e) =>
-                                setNewCategory({ ...newCategory, description: e.target.value })
-                              }
-                            />
-                          </div>
-                          <Button type="submit" className="w-full">
-                            Ajouter le produit
-                          </Button>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+        {/* En-tête avec titre et statistiques */}
+        <div className="mb-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent mb-2">
+                Tableau de bord Manager
+              </h1>
+              <p className="text-muted-foreground">Gérez vos marchés et catégories</p>
+            </div>
+            
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  className="group bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white shadow-lg hover:shadow-primary/30 transition-all duration-300 px-6 py-6 text-base rounded-xl"
+                >
+                  <Plus className="h-5 w-5 mr-2 group-hover:rotate-180 transition-transform duration-500" />
+                  Ajouter une catégorie
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-background/95 backdrop-blur-sm border-border/50">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                    Nouvelle catégorie
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddCategory} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nom de la catégorie</Label>
+                    <Input
+                      id="name"
+                      value={newCategory.name}
+                      onChange={(e) =>
+                        setNewCategory({ ...newCategory, name: e.target.value })
+                      }
+                      className="mt-1"
+                      required
+                    />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newCategory.description}
+                      onChange={(e) =>
+                        setNewCategory({ ...newCategory, description: e.target.value })
+                      }
+                      className="mt-1 min-h-[100px]"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsAddDialogOpen(false)}
+                    >
+                      Annuler
+                    </Button>
+                    <Button type="submit" className="bg-primary hover:bg-primary/90">
+                      Ajouter la catégorie
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total des marchés
-              </CardTitle>
-              <Store className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{markets.length}</div>
-              <p className="text-xs text-muted-foreground">
-                +{markets.length - markets.filter((market) => market.createdAt > new Date(Date.now() - 24 * 60 * 60 * 1000)).length} aujourd'hui
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Nombre de vendeurs sur les marchés
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{markets.reduce((total, market) => total + market.marketSellers.length, 0)}</div>
-              <p className="text-xs text-muted-foreground">
-                +{markets.map((market) => market.marketSellers.length - market.marketSellers.filter((market) => market.createdAt > new Date(Date.now() - 28 * 24 * 60 * 60 * 1000)).length) } nouveaux ce mois
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Produits en vente
-              </CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{products.length}</div>
-              <p className="text-xs text-muted-foreground">
-                +{products.length - products.filter((product) => product.createdAt > new Date(Date.now() - 24 * 60 * 60 * 1000)).length} aujourd'hui
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Chiffre d'affaires
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">2.4M FCFA</div>
-              <p className="text-xs text-muted-foreground">
-                +12% par rapport au mois dernier
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Marchés gérés</CardTitle>
-                <CardDescription>
-                  Liste des marchés sous votre responsabilité
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Localisation</TableHead>
-                      <TableHead>Vendeurs</TableHead>
-                      <TableHead>Produits</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {markets.map((market) => (
-                      <TableRow key={market.id}>
-                        <TableCell className="font-medium">{market.name}</TableCell>
-                        <TableCell>{market.location}</TableCell>
-                        <TableCell>{market.marketSellers.length}</TableCell>
-                        <TableCell>{market.marketSellers.reduce((total, seller) => total + seller.products.length, 0)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Statistiques des ventes</CardTitle>
-              <CardDescription>
-                Aperçu des ventes par marché
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center border-2 border-dashed rounded-lg">
-                <div className="text-center">
-                  <BarChart className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Graphique des ventes
+          {/* Cartes de statistiques */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="bg-gradient-to-br from-background to-muted/50 border border-border/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Marchés</p>
+                  <p className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                    {totalMarkets}
                   </p>
                 </div>
+                <div className="p-3 rounded-full bg-primary/10 text-primary">
+                  <Store className="h-6 w-6" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-background to-muted/50 border border-border/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Produits</p>
+                  <p className="text-3xl font-bold">{totalProducts}</p>
+                </div>
+                <div className="p-3 rounded-full bg-green-500/10 text-green-500">
+                  <ShoppingBag className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-background to-muted/50 border border-border/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Catégories</p>
+                  <p className="text-3xl font-bold">{totalCategories}</p>
+                </div>
+                <div className="p-3 rounded-full bg-purple-500/10 text-purple-500">
+                  <Package className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-8">  
-            <Card>
-            <CardHeader>
-              <CardTitle>Derniers produits ajoutés</CardTitle>
-              <CardDescription>
-                Les produits récemment mis en vente dans vos marchés
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Produit</TableHead>
-                    <TableHead>Vendeur</TableHead>
-                    <TableHead>Marché</TableHead>
-                    <TableHead>Prix</TableHead>
-                    <TableHead>Stock</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.slice(0, 5).map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={product.image ? `/assets${product.image.replace('public', '')}` : "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"}
-                            alt={product.name}
-                            className="w-10 h-10 rounded object-cover"
-                          />
-                          <div>
-                            <p className="font-medium">{product.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {product.category.name}
-                            </p>
+          {/* Grille de contenu */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Carte des marchés */}
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold">Vos marchés</h2>
+                    <p className="text-sm text-muted-foreground">Liste des marchés que vous gérez</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  {markets.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Store className="mx-auto h-10 w-10 mb-2 opacity-50" />
+                      <p>Aucun marché trouvé</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {markets.map((market) => (
+                        <div 
+                          key={market.id}
+                          className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/50 transition-colors group"
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                              <Store className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{market.name}</h3>
+                              <p className="text-sm text-muted-foreground">{market.location}</p>
+                            </div>
                           </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {}}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                         </div>
-                      </TableCell>
-                      <TableCell>John Doe</TableCell>
-                      <TableCell>Marché Central</TableCell>
-                      <TableCell>{product.price} FCFA</TableCell>
-                      <TableCell>{product.stock}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Derniers produits ajoutés</CardTitle>
-              <CardDescription>
-                Les produits récemment mis en vente dans vos marchés
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Catégorie</TableHead>
-                    <TableHead>Description</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {categories.slice(0, 5).map((cat) => (
-                    <TableRow key={cat.id}>
-                      <TableCell>{cat.name}</TableCell>
-                      <TableCell>{cat.description}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div> 
+            {/* Carte des catégories */}
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold">Catégories</h2>
+                    <p className="text-sm text-muted-foreground">Gérez vos catégories de produits</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  {categories.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="mx-auto h-10 w-10 mb-2 opacity-50" />
+                      <p>Aucune catégorie trouvée</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {categories.map((category) => (
+                        <div 
+                          key={category.id}
+                          className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/50 transition-colors group"
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+                              <Package className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{category.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {category.description || 'Aucune description'}
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {}}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
       <Footer />
     </div>

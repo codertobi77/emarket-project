@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Camera, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getNormalizedImagePath } from '@/lib/utils';
 
 interface ProfileImageUploaderProps {
   currentImage?: string | null;
@@ -18,16 +19,21 @@ export function ProfileImageUploader({ currentImage, name, onImageUploaded }: Pr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Préparer l'URL de l'image actuelle en respectant le format de chemins standardisé
-  const getImageUrl = (image?: string | null): string => {
-    if (!image) return '';
+  
+  // Préparer l'URL de l'image à afficher
+  const imageUrl = React.useMemo(() => {
+    if (imagePreview) {
+      return imagePreview;
+    }
     
-    // Appliquer la même logique de conversion des chemins d'images que dans le reste de l'application
-    if (image.startsWith('/users-img/')) return `/assets${image}`;
-    if (image.includes('public/assets/')) return `/${image.split('public/')[1]}`;
-    if (image.includes('assets/')) return `/${image}`;
-    return `/assets/users-img/${image.split('/').pop()}`;
-  };
+    if (currentImage) {
+      const normalized = getNormalizedImagePath(currentImage);
+      console.log('ProfileImageUploader - Final image URL:', normalized);
+      return normalized;
+    }
+    
+    // return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+  }, [imagePreview, currentImage, name]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -60,6 +66,7 @@ export function ProfileImageUploader({ currentImage, name, onImageUploaded }: Pr
       
       // Utiliser le chemin standardisé pour l'image
       const imagePath = `public/assets/users-img/${data.filename}`;
+      console.log('handleFileChange - Image path to save:', imagePath);
       onImageUploaded(imagePath);
       
       toast({
@@ -93,18 +100,23 @@ export function ProfileImageUploader({ currentImage, name, onImageUploaded }: Pr
         accept="image/*"
         className="hidden"
       />
-      
-      <Avatar className="h-28 w-28 border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer">
-        <AvatarImage 
-          src={imagePreview || getImageUrl(currentImage) || `https://ui-avatars.com/api/?name=${name}&background=random`} 
-          alt={name}
-          className="object-cover"
-        />
-        <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-          {name?.charAt(0) || 'U'}
-        </AvatarFallback>
-      </Avatar>
-      
+        {/* Utiliser une condition pour vérifier si l'image existe avant de l'afficher */}
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={name}
+            className="h-28 w-28 rounded-full object-cover border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer"
+            onError={(e) => {
+              console.error('Erreur de chargement de l\'image:', e.currentTarget.src, 'Image originale:', currentImage);
+              // Afficher une lettre à la place de l'image en cas d'erreur
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="h-28 w-28 rounded-full flex items-center justify-center bg-primary/10 text-primary text-2xl border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer">
+            {name?.charAt(0) || 'U'}
+          </div>
+        )}      
       <Button 
         size="icon"
         variant="secondary" 

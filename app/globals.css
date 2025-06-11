@@ -4,83 +4,100 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 197, 205, 197;
+  --background-start-rgb: 250, 251, 252;
   --background-end-rgb: 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --background-start-rgb: 15, 23, 42;
+    --background-end-rgb: 30, 41, 59;
   }
 }
 
-/* CSS HSL */
-/* --eerie-black: hsla(210, 11%, 15%, 1);
---white: hsla(0, 0%, 100%, 1);
---alice-blue: hsla(216, 42%, 95%, 1);
---charcoal: hsla(213, 15%, 32%, 1);
---alice-blue-2: hsla(211, 73%, 91%, 1);
---black: hsla(0, 0%, 0%, 1);
---yale-blue: hsla(210, 82%, 22%, 1);
---gamboge: hsla(35, 90%, 55%, 1);
---hunyadi-yellow: hsla(35, 85%, 61%, 1);
---oxford-blue: hsla(211, 83%, 16%, 1); */
+/* Modern Color Palette */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 210 11% 15%;
-    --card: 216 42% 95%;
-    --card-foreground: 0 0% 3.9%;
+    /* Base Colors */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    
+    /* Card & UI Elements */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 211 83% 16%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 35 90% 55%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Primary - Rich Blue */
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    
+    /* Secondary - Warm Orange */
+    --secondary: 35 95% 55%;
+    --secondary-foreground: 210 40% 98%;
+    
+    /* Accent - Teal */
+    --accent: 174 75% 37%;
+    --accent-foreground: 210 40% 98%;
+    
+    /* UI Support Colors */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    
+    /* Chart Colors - Enhanced for Data Visualization */
+    --chart-1: 221 83% 53%; /* Primary Blue */
+    --chart-2: 174 75% 37%; /* Teal */
+    --chart-3: 262 83% 58%; /* Purple */
+    --chart-4: 35 95% 55%;  /* Orange */
+    --chart-5: 158 64% 52%; /* Green */
+    
     --radius: 0.5rem;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    /* Base Colors */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    
+    /* Card & UI Elements */
+    --card: 217 33% 17%;
+    --card-foreground: 210 40% 98%;
+    --popover: 217 33% 17%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Primary - Brighter in Dark Mode */
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    
+    /* Secondary - Warmer Orange */
+    --secondary: 35 95% 55%;
+    --secondary-foreground: 210 40% 98%;
+    
+    /* Accent - Brighter Teal */
+    --accent: 174 80% 40%;
+    --accent-foreground: 210 40% 98%;
+    
+    /* UI Support Colors */
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --border: 217 33% 25%;
+    --input: 217 33% 25%;
+    --ring: 224 76% 48%;
+    
+    /* Chart Colors - Enhanced for Dark Mode */
+    --chart-1: 217 91% 60%; /* Primary Blue */
+    --chart-2: 174 80% 40%; /* Teal */
+    --chart-3: 262 83% 62%; /* Purple */
+    --chart-4: 35 95% 55%;  /* Orange */
+    --chart-5: 158 64% 52%; /* Green */
   }
 }
 
@@ -93,9 +110,15 @@
   }
 }
 
-/* CSS HEX
-$ash-gray: rgba(197, 205, 197, 1);
-$raisin-black: rgba(29, 36, 52, 1);
-$black-bean: rgba(53, 25, 17, 1);
-$white: rgba(255, 255, 255, 1);
-$gunmetal: rgba(42, 48, 53, 1); */
+/* Modern Color Reference
+--primary-blue: #3b82f6;  Primary brand color
+--secondary-orange: #f97316;  Secondary brand color
+--accent-teal: #14b8a6;  Accent color
+--rich-black: #0f172a;  Dark text and backgrounds
+--pure-white: #ffffff;  Light text and backgrounds
+--light-gray: #f8fafc;  Background and subtle elements
+--medium-gray: #64748b;  Muted text and borders
+--success-green: #10b981;  Success states
+--warning-yellow: #f59e0b;  Warning states
+--error-red: #ef4444;  Error states
+*/

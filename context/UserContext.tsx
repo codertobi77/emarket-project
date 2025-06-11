@@ -5,12 +5,16 @@ import { createContext, useEffect, useState, ReactNode } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 type User = {
-  image: null;
   id: string;
   name: string;
   email: string;
   role: string;
-  session: string;
+  image?: string | null;
+  session?: string;
+  isCertified?: boolean;
+  location?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 } | null;
 
 export type UserContextType = {
