@@ -157,7 +157,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1379,6 +1379,24 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                     <SelectItem value="MANAGER">Manager</SelectItem>
                     <SelectItem value="SELLER">Vendeur</SelectItem>
                     <SelectItem value="BUYER">Acheteur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Emplacement</Label>
+                <Select 
+                  value={newUser.location}
+                  onValueChange={(value) => setNewUser({ ...newUser, location: value as Location })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un emplacement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc} value={loc}>
+                        {loc}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

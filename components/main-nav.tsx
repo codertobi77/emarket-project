@@ -35,13 +35,6 @@ export function MainNav({ userRole }: NavProps) {
       icon: <Package className="h-4 w-4 mr-2" />,
     },
     {
-      href: "/manager",
-      label: "Gestion du Marché",
-      active: pathname === "/manager",
-      roles: ['MANAGER', 'ADMIN'],
-      icon: <Store className="h-4 w-4 mr-2" />,
-    },
-    {
       href: "/admin",
       label: "Administration",
       active: pathname === "/admin",

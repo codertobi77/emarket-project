@@ -59,8 +59,8 @@ export function Header() {
             <ShoppingBag className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
             <div className="absolute -inset-1 rounded-full bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
-          <span className="text-xl font-bold hidden sm:inline-block bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">MarketBenin</span>
-          <span className="text-xl font-bold sm:hidden bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">MB</span>
+          <span className="text-xl font-bold hidden sm:inline-block bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">e-Axi</span>
+          <span className="text-xl font-bold sm:hidden bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">e-Axi</span>
         </Link>
 
         {/* Navigation Links - Desktop */}
