@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -28,7 +30,6 @@ import {
 } from "@/components/ui/dialog";
 import { Market, Product } from "@/types";
 import { Category } from "@prisma/client";
-import { useUser } from "@/hooks/useUser";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +39,8 @@ import { BarChart, Store, Users, ShoppingBag, TrendingUp, Package, Plus, Edit, T
 export const dynamic = "force-dynamic";
 
 export default function ManagerDashboardPage() {
-  const { user } = useUser();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -56,14 +58,26 @@ export default function ManagerDashboardPage() {
   const totalCategories = categories.length;
 
   useEffect(() => {
-    fetchMarkets();
-    fetchProducts();
-    fetchCategories(); 
-  }, []);
+    if (status === "unauthenticated") {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (status === "authenticated" && session?.user?.role !== "MANAGER") {
+      router.push('/');
+      return;
+    }
+
+    if (status === "authenticated") {
+      fetchMarkets();
+      fetchProducts();
+      fetchCategories();
+    }
+  }, [status, session, router]);
 
   const fetchMarkets = async () => {
     setIsLoading(true);
-    const where = user?.role === "MANAGER" ? { managerId: user?.id } : {};
+    const where = session?.user?.role === "MANAGER" ? { managerId: session?.user?.id } : {};
     try {
       const response = await fetch(`/api/markets?where=${JSON.stringify(where)}`);
       if (!response.ok) throw new Error("Erreur lors du chargement des marchés");

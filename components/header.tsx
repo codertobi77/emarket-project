@@ -5,28 +5,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MainNav } from "@/components/main-nav";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, User, Menu, X, LogOut, Home, ShoppingCart, ChevronDown, Settings, Store } from "lucide-react";
+import { ShoppingBag, User, Menu, X, LogOut, Home, ShoppingCart, ChevronDown, Settings, Store, Package } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
-import { useUser } from "@/hooks/useUser";
+import { useSession } from '@/lib/use-session';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
+import { signOut } from "next-auth/react";
+import Image from "next/image";
 
 export function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const {user, loading} = useUser();
+  const { session, isLoading } = useSession();
+  const user = session?.user;
 
   // Détecter le défilement pour ajouter des effets visuels au header
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const toggleMenu = () => {
@@ -47,10 +48,8 @@ export function Header() {
 
   return (
     <header className={cn(
-      "sticky top-0 z-50 w-full transition-all duration-300",
-      isScrolled 
-        ? "bg-background/90 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.08)]" 
-        : "bg-background border-b border-border/40"
+      "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+      isScrolled && "shadow-sm"
     )}>
       <div className="container flex h-16 items-center px-4 sm:px-6 justify-between">
         {/* Logo modernisé */}
@@ -65,7 +64,7 @@ export function Header() {
 
         {/* Navigation Links - Desktop */}
         <div className="hidden md:flex items-center justify-center flex-1 max-w-2xl mx-4">
-          {!loading && user && <MainNav userRole={user.role} />}
+          {status !== "loading" && session && <MainNav userRole={user?.role} />}
         </div>
 
         {/* Right Side Actions */}
@@ -74,9 +73,9 @@ export function Header() {
           <ModeToggle />
           
           {/* User Section */}
-          {loading ? (
+          {status === "loading" ? (
             <div className="w-8 h-8 rounded-full bg-primary/10 animate-pulse"></div>
-          ) : !user ? (
+          ) : !session ? (
             <div className="hidden sm:flex items-center space-x-2">
               <Link href="/auth/login">
                 <Button variant="ghost" size="sm" className="text-foreground/80 hover:text-foreground hover:bg-primary/5 transition-all duration-200 rounded-xl">
@@ -92,53 +91,52 @@ export function Header() {
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="flex items-center space-x-2 rounded-full h-9 pl-2 pr-3 hover:bg-primary/5 focus:bg-primary/5 border border-transparent hover:border-primary/10 transition-all duration-200"
-                >
-                  <img
-                    src={getProfileImage()}
-                    className="h-7 w-7 rounded-full object-cover border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer"
-                    onError={(e) => {
-                      console.error('Erreur de chargement de l\'image:', e.currentTarget.src);
-                      // Afficher une lettre à la place de l'image en cas d'erreur
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <span className="text-sm font-medium hidden sm:inline-block truncate max-w-[100px] text-foreground/90">
-                    {user.name}
-                  </span>
-                  <ChevronDown className="h-4 w-4 text-primary/70 hidden sm:block transition-transform duration-200 ease-in-out" />
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.image} alt={user?.name || ''} />
+                    <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 p-2 border border-border/50 shadow-lg rounded-xl">
-                <DropdownMenuLabel className="font-normal rounded-lg p-3">
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    <p className="text-sm font-medium leading-none">{user?.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="my-1" />
-                {user.role === 'SELLER' && (
-                  <DropdownMenuItem className="rounded-lg hover:bg-primary/5 transition-colors duration-200 py-2 px-3">
-                    <Store className="h-4 w-4 mr-2 text-primary" />
-                    <Link href="/seller" className="flex-1">Espace Vendeur</Link>
-                  </DropdownMenuItem>
-                )}
-                {user.role === 'ADMIN' && (
-                  <DropdownMenuItem className="rounded-lg hover:bg-primary/5 transition-colors duration-200 py-2 px-3">
-                    <Settings className="h-4 w-4 mr-2 text-accent" />
-                    <Link href="/admin" className="flex-1">Administration</Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem className="rounded-lg hover:bg-primary/5 transition-colors duration-200 py-2 px-3">
-                  <User className="h-4 w-4 mr-2 text-primary" />
-                  <Link href="/account" className="flex-1">Mon Compte</Link>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/account">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Mon compte</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="my-1" />
-                <DropdownMenuItem className="rounded-lg hover:bg-red-500/10 transition-colors duration-200 py-2 px-3 text-red-500">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  <Link href="/auth/logout" className="flex-1">Se déconnecter</Link>
+                {user?.role === 'SELLER' && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/seller">
+                      <Store className="mr-2 h-4 w-4" />
+                      <span>Espace vendeur</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {user?.role === 'ADMIN' && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Administration</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -165,18 +163,18 @@ export function Header() {
         <div className="fixed inset-x-0 top-16 bottom-0 z-50 bg-background/98 backdrop-blur-md md:hidden overflow-y-auto">
           <div className="container py-8 px-6 flex flex-col divide-y divide-border/30">
             {/* Mobile User Profile - Show only if logged in */}
-            {!loading && user && (
+            {status !== "loading" && session && (
               <div className="pb-6 mb-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-md">
-                    <AvatarImage src={getProfileImage() || `https://ui-avatars.com/api/?name=${user.name}&background=random`} />
+                    <AvatarImage src={user?.image || `https://ui-avatars.com/api/?name=${user?.name}&background=random`} />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10">
-                      {user.name?.charAt(0) || 'U'}
+                      {user?.name?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-lg font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{user.name}</h3>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <h3 className="text-lg font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{user?.name}</h3>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
                 </div>
                 <div className="mt-4 flex space-x-3">
@@ -186,17 +184,23 @@ export function Header() {
                       Mon compte
                     </Button>
                   </Link>
-                  <Link href="/auth/logout" onClick={() => setIsMenuOpen(false)}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors">
-                      <LogOut className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                    onClick={() => {
+                      signOut();
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             )}
             
             {/* Navigation Links modernisés */}
-            <div className={cn("py-6", !loading && user ? "" : "pt-0")}>
+            <div className={cn("py-6", status !== "loading" && session ? "" : "pt-0")}>
               <h3 className="text-sm font-semibold text-primary/80 mb-4 tracking-wider">NAVIGATION</h3>
               <nav className="grid gap-3">
                 <Link
@@ -226,7 +230,7 @@ export function Header() {
                   <span className="font-medium">Produits</span>
                 </Link>
                 
-                {!loading && user && (user.role === 'SELLER' || user.role === 'ADMIN') && (
+                {status !== "loading" && session && (user?.role === 'SELLER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/seller"
                     className={cn(
@@ -242,7 +246,7 @@ export function Header() {
                   </Link>
                 )}
                 
-                {!loading && user && (user.role === 'MANAGER' || user.role === 'ADMIN') && (
+                {status !== "loading" && session && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/manager"
                     className={cn(
@@ -253,52 +257,12 @@ export function Header() {
                     )}
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <Store className="h-4 w-4 mr-3" />
-                    Gestion du Marché
-                  </Link>
-                )}
-                
-                {!loading && user && (user.role === 'ADMIN') && (
-                  <Link
-                    href="/admin"
-                    className={cn(
-                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
-                      pathname === "/admin" 
-                        ? "bg-primary/10 text-primary font-medium" 
-                        : "text-muted-foreground hover:bg-muted"
-                    )}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
                     <Settings className="h-4 w-4 mr-3" />
-                    Administration
+                    Espace Manager
                   </Link>
                 )}
               </nav>
             </div>
-            
-            {/* Authentication - Show only if not logged in */}
-            {loading ? (
-              <div className="flex justify-center py-4">
-                <div className="w-full h-10 rounded bg-muted animate-pulse"></div>
-              </div>
-            ) : !user && (
-              <div className="pt-4 mt-4">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3">COMPTE</h3>
-                <div className="space-y-3">
-                  <Link href="/auth/login" onClick={() => setIsMenuOpen(false)} className="block">
-                    <Button variant="outline" className="w-full justify-start">
-                      <User className="h-4 w-4 mr-2" />
-                      Se connecter
-                    </Button>
-                  </Link>
-                  <Link href="/auth/register" onClick={() => setIsMenuOpen(false)} className="block">
-                    <Button className="w-full justify-start">
-                      Créer un compte
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}

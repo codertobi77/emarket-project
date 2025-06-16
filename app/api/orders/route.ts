@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { getSession } from "@/lib/auth";
-import { JwtPayload } from "jsonwebtoken";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = 'error';
 export const getStaticProps = async () => {
@@ -11,85 +11,72 @@ export const getStaticProps = async () => {
   };
 };
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session) {
-      return NextResponse.json(
-        { message: "Non autorisé" },
-        { status: 403 }
-      );
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return new NextResponse("Non autorisé", { status: 401 });
     }
 
-    const where = {
-      OR: [
-        { buyerId: session.id },
-        {
-          items: {
-            some: {
-              sellerId: session.id,
-            },
-          },
-        },
-      ],
-    };
-
     const orders = await prisma.order.findMany({
-      where,
+      where: {
+        buyerId: session.user.id,
+      },
       include: {
-        buyer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
         items: {
           include: {
             product: true,
-            seller: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
+            seller: true,
           },
         },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
     return NextResponse.json(orders);
   } catch (error) {
-    console.error("Error fetching orders:", error);
-    return NextResponse.json(
-      { message: "Erreur lors de la récupération des commandes: "+error },
-      { status: 500 }
-    );
+    console.error("Erreur lors de la récupération des commandes:", error);
+    return new NextResponse("Erreur interne du serveur", { status: 500 });
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session) {
-      return NextResponse.json(
-        { message: "Non autorisé" },
-        { status: 403 }
-      );
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return new NextResponse("Non autorisé", { status: 401 });
     }
 
-    const { items } = await req.json();
+    const body = await request.json();
+    const { items, address } = body;
 
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return new NextResponse("Panier invalide", { status: 400 });
+    }
+
+    if (!address) {
+      return new NextResponse("Adresse requise", { status: 400 });
+    }
+
+    // Calculer le montant total
+    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Créer la commande
     const order = await prisma.order.create({
       data: {
-        buyerId: session.id,
+        buyerId: session.user.id,
+        totalAmount,
+        status: "PENDING",
         items: {
-          create: items.map((item: any) => ({
-            productId: item.productId,
+          create: items.map((item) => ({
+            productId: item.id,
             sellerId: item.sellerId,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
+            unitPrice: item.price,
           })),
         },
       },
@@ -97,17 +84,27 @@ export async function POST(req: NextRequest) {
         items: {
           include: {
             product: true,
+            seller: true,
           },
         },
       },
     });
 
+    // Mettre à jour le stock des produits
+    for (const item of items) {
+      await prisma.product.update({
+        where: { id: item.id },
+        data: {
+          stock: {
+            decrement: item.quantity,
+          },
+        },
+      });
+    }
+
     return NextResponse.json(order);
   } catch (error) {
-    console.error("Error creating order:", error);
-    return NextResponse.json(
-      { message: "Erreur lors de la création de la commande" },
-      { status: 500 }
-    );
+    console.error("Erreur lors de la création de la commande:", error);
+    return new NextResponse("Erreur interne du serveur", { status: 500 });
   }
 }

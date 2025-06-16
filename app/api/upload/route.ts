@@ -1,59 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
-import { randomBytes } from 'crypto';
+import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import * as fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-export async function POST (req: NextRequest) {
-
-    const formData = await req.formData();
-
-    if (!formData) {
-      return NextResponse.json({ message: 'No form data provided' }, { status: 400 });
-    }
-  
-    const image = formData.get('image');
-    const folder = formData.get('folder');
-
-  if (!image) {
-    return NextResponse.json({ message: 'No image provided' }, { status: 400 });
-  }
-
-  if (!folder) {
-    return NextResponse.json({ message: 'No folder provided' }, { status: 400 });
-  }
-
-  if (image instanceof File) {
-    try {
-      // Méthode correcte pour lire le contenu d'un fichier dans Next.js API routes
-      const bytes = await image.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      
-      // Générer un nom de fichier unique pour éviter les doublons et les problèmes d'extension
-      const fileExt = image.name.split('.').pop() || 'jpg';
-      const uniqueFilename = `${randomBytes(8).toString('hex')}.${fileExt}`;
-      
-      const dir = join("public", 'assets', folder as string);
-      
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      const filePath = join(dir, uniqueFilename);
-      // Écrire le contenu réel du fichier
-      fs.writeFileSync(filePath, new Uint8Array(buffer));
-      
-      console.log(`Fichier uploadé avec succès: ${filePath} - Taille: ${buffer.length} octets`);
-    
-      return NextResponse.json({ filename: uniqueFilename, path: filePath });      
-    } catch (error) {
-      console.error('Erreur lors de l\'upload du fichier:', error);
-      return NextResponse.json({ message: 'Erreur lors de l\'upload du fichier' }, { status: 500 });
+export async function POST(request: NextRequest) {
+  try {
+    // Vérifier l'authentification
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-  } else {
-    // Handle the case where image is not a File object
-    return NextResponse.json({ message: 'Invalid image provided' }, { status: 400 });
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const imageData = formData.get('imageData') as string;
+
+    if (!file || !imageData) {
+      return NextResponse.json(
+        { error: 'Fichier ou données d\'image manquants' },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier le type de fichier
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'Le fichier doit être une image' },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier la taille du fichier (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'L\'image ne doit pas dépasser 5MB' },
+        { status: 400 }
+      );
+    }
+
+    // Créer un nom de fichier unique
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const uniqueId = uuidv4();
+    const extension = file.name.split('.').pop();
+    const filename = `${uniqueId}.${extension}`;
+
+    // Définir le chemin de sauvegarde
+    const uploadDir = join(process.cwd(), 'public', 'assets', 'users-img');
+    const filePath = join(uploadDir, filename);
+    // Sauvegarder le fichier
+    await writeFile(filePath, new Uint8Array(buffer));
+
+    // Retourner le chemin de l'image
+    const imagePath = `/assets/users-img/${filename}`;
+    return NextResponse.json({ imagePath });
+  } catch (error) {
+    console.error('Erreur lors du téléchargement:', error);
+    return NextResponse.json(
+      { error: 'Erreur lors du téléchargement de l\'image' },
+      { status: 500 }
+    );
   }
-  
-};
+}

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, SetStateAction } from "react";
-import { useUser } from "@/hooks/useUser";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/header";
@@ -16,11 +16,14 @@ import { User, ShieldCheck, Bell, Package, CreditCard, Settings, AlertTriangle }
 import { CertifiedSellerDialog } from "@/components/certified-seller-dialog";
 import { ProfileImageUploader } from "@/components/profile-image-uploader";
 import { useToast } from "@/hooks/use-toast";
+import { useAccount } from '@/lib/use-account';
+import Image from 'next/image';
 
 export default function AccountPage() {
-  const { user, setUser } = useUser();
+  const { account, isLoading, isError, mutate } = useAccount();
+  const { data: session, update } = useSession();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingForm, setIsLoadingForm] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,94 +32,114 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [isCertified, setIsCertified] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   
-  // Initialiser les données du formulaire quand l'utilisateur est chargé
+  // Initialiser les données du formulaire quand la session est chargée
   useEffect(() => {
-    if (user) {
-      console.log('User image path:', user.image);
-      setName(user.name);
-      setEmail(user.email);
-      setProfileImage(user.image || null);
-      setIsCertified(!!user.isCertified);
-      console.log('Profile image set to:', user.image || null);
+    if (account) {
+      console.log('User image path:', account.image);
+      setName(account.name || "");
+      setEmail(account.email || "");
+      setProfileImage(account.image || null);
+      setIsCertified(!!account.isCertified);
+      console.log('Profile image set to:', account.image || null);
     }
-  }, [user]);
+  }, [account]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsLoading(true);
+    setIsLoadingForm(true);
     setError(null);
 
     if (password && password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas");
-      setIsLoading(false);
+      setIsLoadingForm(false);
       return;
     }
 
     try {
-      const response = await fetch("/api/users", {
-        method: "PATCH",
+      const response = await fetch('/api/user', {
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name,
           email,
+          password: password || undefined,
           image: profileImage,
-          password: password || undefined, // Ne pas envoyer le mot de passe s'il est vide
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setUser({...user, ...data});
-        toast({
-          title: "Profil mis à jour",
-          description: "Vos informations ont été mises à jour avec succès.",
-        });
-        setPassword("");
-        setConfirmPassword("");
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Erreur lors de la mise à jour");
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
       }
+
+      const data = await response.json();
+      
+      // Mettre à jour la session
+      await update({
+        ...session,
+        user: {
+          ...account,
+          ...data
+        }
+      });
+
+      // Revalider les données SWR
+      await mutate();
+
+      toast({
+        title: "Profil mis à jour",
+        description: "Vos informations ont été mises à jour avec succès.",
+      });
     } catch (error) {
-      console.error(error);
       setError("Erreur lors de la mise à jour du profil");
     } finally {
-      setIsLoading(false);
+      setIsLoadingForm(false);
     }
   };
   
   const handleImageUploaded = async (imagePath: string) => {
-    console.log('handleImageUploaded - Image path received:', imagePath);
-    setProfileImage(imagePath);
-    
     try {
-      console.log('handleImageUploaded - Sending image path to API:', imagePath);
-      const response = await fetch("/api/users", {
-        method: "PATCH",
+      // Mettre à jour l'image dans l'état local
+      setProfileImage(imagePath);
+
+      // Mettre à jour l'image dans la base de données
+      const response = await fetch('/api/user', {
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           image: imagePath,
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setUser({...user, ...data});
-      } else {
-        const errorData = await response.json();
-        toast({
-          title: "Erreur",
-          description: errorData.message || "Erreur lors de la mise à jour de l'image",
-          variant: "destructive",
-        });
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour de l\'image');
       }
+
+      const data = await response.json();
+
+      // Mettre à jour la session
+      await update({
+        ...session,
+        user: {
+          ...account,
+          ...data
+        }
+      });
+
+      // Revalider les données SWR
+      await mutate();
+
+      toast({
+        title: "Succès",
+        description: "Image de profil mise à jour avec succès",
+      });
     } catch (error) {
-      console.error(error);
+      console.error('Erreur lors de la mise à jour de l\'image:', error);
       toast({
         title: "Erreur",
         description: "Erreur lors de la mise à jour de l'image de profil",
@@ -131,6 +154,22 @@ export default function AccountPage() {
       description: "Votre demande de certification a été enregistrée. Vous recevrez bientôt un email avec les prochaines étapes.",
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500">Erreur lors du chargement des données</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -155,8 +194,8 @@ export default function AccountPage() {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="text-xs">{user?.role}</Badge>
-                {user?.role === 'SELLER' && (
+                <Badge variant="outline" className="text-xs">{account?.role}</Badge>
+                {account?.role === 'SELLER' && (
                   <Badge variant="secondary" className="text-xs">Vendeur</Badge>
                 )}
               </div>
@@ -165,7 +204,7 @@ export default function AccountPage() {
         </div>
         
         {/* Bannière pour les vendeurs */}
-        {(user?.role === 'SELLER' && !isCertified) && (
+        {(account?.role === 'SELLER' && !isCertified) && (
           <Alert className="mb-6 bg-primary/10 border-primary/20">
             <ShieldCheck className="h-5 w-5 text-primary" />
             <AlertTitle className="text-primary font-medium">Certification de vendeur disponible</AlertTitle>
@@ -181,7 +220,7 @@ export default function AccountPage() {
           </Alert>
         )}
         
-        {user?.role === 'SELLER' && isCertified && (
+        {account?.role === 'SELLER' && isCertified && (
           <Alert className="mb-6 bg-green-50 border-green-200">
             <ShieldCheck className="h-5 w-5 text-green-600" />
             <AlertTitle className="text-green-800 font-medium">Vendeur Certifié</AlertTitle>
@@ -208,7 +247,7 @@ export default function AccountPage() {
               <ShieldCheck className="h-4 w-4" />
               <span>Sécurité</span>
             </TabsTrigger>
-            {user?.role === 'SELLER' && (
+            {account?.role === 'SELLER' && (
               <TabsTrigger value="store" className="gap-2">
                 <Package className="h-4 w-4" />
                 <span>Ma boutique</span>
@@ -256,8 +295,8 @@ export default function AccountPage() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button form="profile-form" type="submit" disabled={isLoading}>
-                  {isLoading ? "Mise à jour..." : "Enregistrer les changements"}
+                <Button form="profile-form" type="submit" disabled={isLoadingForm}>
+                  {isLoadingForm ? "Mise à jour..." : "Enregistrer les changements"}
                 </Button>
               </CardFooter>
             </Card>
@@ -297,15 +336,15 @@ export default function AccountPage() {
                 </form>
               </CardContent>
               <CardFooter>
-                <Button form="security-form" type="submit" disabled={isLoading}>
-                  {isLoading ? "Mise à jour..." : "Mettre à jour le mot de passe"}
+                <Button form="security-form" type="submit" disabled={isLoadingForm}>
+                  {isLoadingForm ? "Mise à jour..." : "Mettre à jour le mot de passe"}
                 </Button>
               </CardFooter>
             </Card>
           </TabsContent>
           
           {/* Onglet Boutique (pour les vendeurs) */}
-          {user?.role === 'SELLER' && (
+          {account?.role === 'SELLER' && (
             <TabsContent value="store" className="space-y-6">
               <Card>
                 <CardHeader>

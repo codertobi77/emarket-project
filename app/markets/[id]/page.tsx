@@ -16,6 +16,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Cart } from "@/components/cart";
+import { useSession } from "next-auth/react";
 
 export default function MarketProductsPage() {
   const pathname = usePathname();
@@ -30,6 +31,8 @@ export default function MarketProductsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const { data: session } = useSession();
+  const user = session?.user;
 
   useEffect(() => {
     if (marketId) {
@@ -88,8 +91,11 @@ export default function MarketProductsPage() {
 
   const handleAddToCart = async (product: Product) => {
     try {
-      // Add to cart in localStorage
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      // Récupérer le panier existant ou initialiser un tableau vide
+      const cartKey = `${user?.id || "nobody"}-cart`;
+      const existingCart = localStorage.getItem(cartKey);
+      const cart = existingCart ? JSON.parse(existingCart) : [];
+      
       const existingItem = cart.find((item: any) => item.id === product.id);
       
       if (existingItem) {
@@ -114,7 +120,6 @@ export default function MarketProductsPage() {
         cart.push({ 
           ...product, 
           quantity: 1,
-          // Make sure we only include necessary product data
           id: product.id,
           name: product.name,
           price: Number(product.price),
@@ -123,25 +128,24 @@ export default function MarketProductsPage() {
         });
       }
       
-      localStorage.setItem('cart', JSON.stringify(cart));
-      // Trigger storage event to update other components
+      localStorage.setItem(cartKey, JSON.stringify(cart));
       window.dispatchEvent(new Event('storage'));
       
-      // Update product stock in database
-      const response = await fetch('/api/products', {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          id: product.id,
-          stock: product.stock - 1 
-        }),
-      });
+      // // Update product stock in database
+      // const response = await fetch('/api/products', {
+      //   method: "PATCH",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({ 
+      //     id: product.id,
+      //     stock: product.stock - 1 
+      //   }),
+      // });
       
-      if (!response.ok) {
-        throw new Error("Failed to update product stock");
-      }
+      // if (!response.ok) {
+      //   throw new Error("Failed to update product stock");
+      // }
       
       // Update local product stock to reflect the change
       setProducts(prevProducts => 
@@ -231,22 +235,15 @@ export default function MarketProductsPage() {
           <div className="flex flex-col md:flex-row gap-8 items-start">
             {/* Image du marché */}
             <div className="w-full md:w-1/3 lg:w-1/4 aspect-square rounded-2xl overflow-hidden border-4 border-white/20 shadow-xl relative">
-              <img 
-                src={market?.image
-                  ? market.image.startsWith('/markets-img/') 
-                    ? `/assets${market.image}` 
-                    : market.image.includes('public/assets/') 
-                      ? `/${market.image.split('public/')[1]}`
-                      : market.image.includes('assets/') 
-                        ? `/${market.image}` 
-                        : `/assets/markets-img/${market.image?.split('/').pop()}`
-                  : "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"}
-                alt={market?.name || "Marché"}
-                className="object-cover w-full h-full"
-                onError={(e) => {
-                  e.currentTarget.src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
-                }}
-              />
+            <img
+                    src={getNormalizedImagePath(market?.image || "")}
+                    alt={market?.name}
+                    className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                    onError={(e) => {
+                      console.error(`Erreur de chargement de l'image pour ${market?.name}:`, market?.image);
+                      e.currentTarget.src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
+                    }}
+                  />
             </div>
             
             {/* Informations du marché */}

@@ -7,40 +7,51 @@ import { X, Plus, Minus, ShoppingCart } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image?: string;
-  stock: number;
-}
+import { useSession } from "@/lib/use-session";
+import { CartItem } from "@/types";
 
 export function Cart() {
   const [isOpen, setIsOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+  const { session, isLoading } = useSession();
 
   useEffect(() => {
     setIsClient(true);
-    const storedCart = localStorage.getItem('cart');
+    const cartKey = `${session?.user?.id || "nobody"}-cart`;
+    const storedCart = localStorage.getItem(cartKey);
     if (storedCart) {
-      setCart(JSON.parse(storedCart));
+      try {
+        const parsedCart = JSON.parse(storedCart);
+        setCart(Array.isArray(parsedCart) ? parsedCart : []);
+      } catch (error) {
+        console.error('Error parsing cart:', error);
+        setCart([]);
+      }
+    } else {
+      setCart([]);
     }
 
     // Listen for cart updates from other components
     const handleStorageChange = () => {
-      const updatedCart = localStorage.getItem('cart');
+      const updatedCart = localStorage.getItem(cartKey);
       if (updatedCart) {
-        setCart(JSON.parse(updatedCart));
+        try {
+          const parsedCart = JSON.parse(updatedCart);
+          setCart(Array.isArray(parsedCart) ? parsedCart : []);
+        } catch (error) {
+          console.error('Error parsing cart:', error);
+          setCart([]);
+        }
+      } else {
+        setCart([]);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [session?.user?.id]);
 
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -50,14 +61,14 @@ export function Cart() {
     );
     
     setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    localStorage.setItem(`${session?.user?.id}-cart`, JSON.stringify(updatedCart));
     window.dispatchEvent(new Event('storage'));
   };
 
   const removeItem = (id: string) => {
     const updatedCart = cart.filter(item => item.id !== id);
     setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    localStorage.setItem(`${session?.user?.id}-cart`, JSON.stringify(updatedCart));
     window.dispatchEvent(new Event('storage'));
     
     toast({

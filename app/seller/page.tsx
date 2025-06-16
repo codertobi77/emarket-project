@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -48,13 +50,27 @@ export default function SellerDashboardPage() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    setIsLoading(false);
-  }, []);
+    if (status === "unauthenticated") {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (status === "authenticated" && session?.user?.role !== "SELLER") {
+      router.push('/');
+      return;
+    }
+
+    if (status === "authenticated") {
+      fetchProducts();
+      fetchCategories();
+      setIsLoading(false);
+    }
+  }, [status, session, router]);
 
   const fetchProducts = async () => {
     try {

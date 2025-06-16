@@ -5,22 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ArrowRight, Store, ShieldCheck, Users, ShoppingCart } from "lucide-react";
-import { useUser } from "@/hooks/useUser";
+import { useSession } from "@/lib/use-session";
 import { useEffect, useState } from "react";
 import { Market } from "@/types";
-
+import { getNormalizedImagePath } from "@/lib/utils";
 
 export default function Home() {
-  const { user } = useUser();
+  const { session, isLoading } = useSession();
+  const user = session?.user;
   const [markets, setMarkets] = useState<Market[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingMarkets, setIsLoadingMarkets] = useState<boolean>(true);
 
   useEffect(() => {
     fetchMarkets();
   }, []);
 
   const fetchMarkets = async () => {
-    setIsLoading(true);
+    setIsLoadingMarkets(true);
     try {
       const response = await fetch("/api/markets");
       const data = await response.json();
@@ -28,7 +29,7 @@ export default function Home() {
     } catch (error) {
       console.error("Error fetching markets:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoadingMarkets(false);
     }
   };
 
@@ -56,7 +57,7 @@ export default function Home() {
           <div className="container relative z-20 px-4 md:px-6 py-20 md:py-32 min-h-[90vh] flex items-center">
             <div className="max-w-3xl">
               <div className="p-8 md:p-10 backdrop-blur-md bg-background/70 rounded-3xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] border border-white/30">
-                {(!user?.role || ['BUYER', 'SELLER', 'MANAGER', 'ADMIN'].includes(user.role)) && (
+                {(!user?.role || ['BUYER', 'SELLER', 'MANAGER', 'ADMIN'].includes(user?.role)) && (
                   <>
                     <div className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
                       Découvrez le système officiel de gestion des marchés régionaux du Bénin
@@ -255,18 +256,7 @@ export default function Home() {
                       
                       {/* Image with zoom effect on hover */}
                       <img 
-                        src={
-                          market.image
-                            ? market.image.startsWith('/markets-img/')
-                              ? `/assets${market.image}`
-                              : market.image.includes('public/assets/')
-                                ? `/${market.image.split('public/')[1]}`
-                                : market.image.includes('assets/')
-                                  ? `/${market.image}`
-                                  : `/assets/markets-img/${market.image.split('/').pop()}`
-                            : "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"
-                        } 
-                        alt={market.name} 
+                        src={getNormalizedImagePath(market.image as string)} 
                         className="absolute inset-0 w-full h-full object-cover scale-100 group-hover:scale-110 transition-transform duration-700 ease-in-out"
                         onError={e => {
                           (e.currentTarget as HTMLImageElement).src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
@@ -373,4 +363,5 @@ export default function Home() {
       <Footer />
     </div>
   );
+}
 }

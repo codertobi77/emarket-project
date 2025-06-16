@@ -1,154 +1,119 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { ShoppingBag } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useUser } from "@/hooks/useUser";
-import { getSession } from "@/lib/auth";
-import { useToast } from "@/hooks/use-toast";
-
-const formSchema = z.object({
-  email: z.string().email({ message: "Veuillez entrer une adresse email valide" }),
-  password: z.string().min(6, { message: "Le mot de passe doit contenir au moins 6 caractères" }),
-});
+import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser } = useUser();
-  const { toast } = useToast();
+  const router = useRouter();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
-    
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
-      
-      const data = await response.json();
 
-      if (response.ok) {
-        setUser(data.user);
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
         toast({
-          title: "Connexion réussie",
-          description: `Bienvenue ${data.user.name} !`,
+          title: "Erreur de connexion",
+          description: result.error,
+          variant: "destructive",
         });
-        router.push("/marketplace");
       } else {
-        const errorMessage = data.message || "Échec de la connexion";
-        throw new Error(errorMessage);
+        router.push("/");
+        router.refresh();
       }
     } catch (error) {
-      console.error("Login error:", error);
       toast({
-        title: "Erreur de connexion",
-        description: error instanceof Error ? error.message : "Une erreur est survenue",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la connexion",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-1 flex items-center justify-center py-12 bg-muted/40">
-        <Card className="mx-auto w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex justify-center">
-              <ShoppingBag className="h-10 w-10 text-primary" />
-            </div>
-            <CardTitle className="text-3xl font-bold">Connexion</CardTitle>
-            <CardDescription>
-              Entrez vos informations pour accéder à votre compte
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="nom@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mot de passe</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="text-right">
-                  <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
-                    Mot de passe oublié?
-                  </Link>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-muted/30">
+      {/* Decorative elements in background */}
+      <div className="absolute inset-0 overflow-hidden opacity-10">
+        <div className="absolute -top-[300px] -right-[300px] w-[600px] h-[600px] rounded-full bg-primary"></div>
+        <div className="absolute -bottom-[400px] -left-[400px] w-[800px] h-[800px] rounded-full bg-accent"></div>
+      </div>
+      
+      {/* Subtle dot pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+          backgroundSize: "30px 30px"
+        }}></div>
+      </div>
+
+      <div className="container relative z-10 px-4 md:px-6">
+        <div className="mx-auto max-w-[400px]">
+          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold text-center">Connexion</CardTitle>
+              <CardDescription className="text-center">
+                Entrez vos identifiants pour accéder à votre compte
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="exemple@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
-                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Mot de passe</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-4">
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Connexion en cours..." : "Se connecter"}
                 </Button>
-              </form>
-            </Form>
-            
-            <div className="text-center text-sm">
-              <p className="text-muted-foreground">
-                Vous n'avez pas de compte?{" "}
-                <Link href="/auth/register" className="text-primary hover:underline">
-                  S'inscrire
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-      <Footer />
+                <p className="text-sm text-center text-muted-foreground">
+                  Pas encore de compte ?{" "}
+                  <Link href="/auth/register" className="text-primary hover:underline">
+                    S'inscrire
+                  </Link>
+                </p>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

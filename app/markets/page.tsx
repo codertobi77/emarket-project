@@ -7,14 +7,15 @@ import { Footer } from "@/components/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Store, MapPin, User, ArrowRight, Building } from "lucide-react";
-import { useUser } from "@/hooks/useUser";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
 export default function MarketsPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { user } = useUser();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   useEffect(() => {
     fetchMarkets();

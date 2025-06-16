@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useUser } from "@/hooks/useUser";
+import { useSession } from "@/lib/use-session";
 
 type RoleProtectedProps = {
   allowedRoles: string[];
@@ -10,34 +10,34 @@ type RoleProtectedProps = {
 };
 
 export default function RoleProtected({ allowedRoles, children }: RoleProtectedProps) {
-  const { user, loading } = useUser();
+  const { session, isLoading } = useSession();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    // Attendre que le chargement de l'utilisateur soit terminé avant de décider de rediriger
-    if (!loading) {
-      if (pathname !== '/auth/login' && !user) {
+    // Attendre que le chargement de la session soit terminé avant de décider de rediriger
+    if (!isLoading) {
+      if (pathname !== '/auth/login' && !session) {
         // Non connecté, rediriger vers login
         router.push("/auth/login");
         return;
       }
-      if (pathname !== '/auth/login' && user && !allowedRoles.includes(user.role)) {
+      if (pathname !== '/auth/login' && session && !allowedRoles.includes(session.user.role)) {
         // Connecté mais rôle non autorisé, rediriger vers page non autorisée ou accueil
         router.push("/");
       }
     }
-  }, [user, loading, allowedRoles, router, pathname]);
+  }, [session, isLoading, allowedRoles, router, pathname]);
 
-  // Afficher un indicateur de chargement pendant le chargement de l'utilisateur
-  if (loading) {
+  // Afficher un indicateur de chargement pendant le chargement de la session
+  if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen">
       <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-900"></div>
     </div>;
   }
 
   // Si non connecté ou rôle non autorisé, ne rien afficher
-  if (!user || !allowedRoles.includes(user.role)) {
+  if (!session || !allowedRoles.includes(session.user.role)) {
     return null;
   }
 

@@ -24,6 +24,7 @@ export interface User {
   marketSellers?: MarketSellers[];
 }
 
+
 // Renamed from MarketSeller to MarketSellers to match Prisma Model
 export interface MarketSellers {
   // id: string; // Prisma's MarketSellers uses a composite @@id([marketId, sellerId])
@@ -99,4 +100,13 @@ export interface Order {
   // Relations
   buyer: User;
   items: OrderItem[]; // Renamed from 'products' for clarity and consistency with schema relation name
+}
+
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+  stock: number;
 }

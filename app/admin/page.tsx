@@ -3,7 +3,7 @@
 import { Metadata } from "next";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/hooks/useUser";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,6 +36,8 @@ export default function AdminDashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   
   // Statistiques
   const stats = [
@@ -122,36 +124,48 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
 
   // Chargement des données
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Chargement des utilisateurs
-        const usersResponse = await fetch('/api/users');
-        const usersData = await usersResponse.json();
-        setUsers(usersData);
-        
-        // Chargement des marchés
-        const marketsResponse = await fetch('/api/markets');
-        const marketsData = await marketsResponse.json();
-        setMarkets(marketsData);
-        
-        // Chargement des produits
-        const productsResponse = await fetch('/api/products');
-        const productsData = await productsResponse.json();
-        setProducts(productsData);
-        
-        // Chargement des localisations
-        const locationsData = Object.values(Location);
-        setLocations(locationsData);
-      } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, []);
+    if (status === "unauthenticated") {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (status === "authenticated" && session?.user?.role !== "ADMIN") {
+      router.push('/');
+      return;
+    }
+
+    if (status === "authenticated") {
+      fetchData();
+    }
+  }, [status, session, router]);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Chargement des utilisateurs
+      const usersResponse = await fetch('/api/users');
+      const usersData = await usersResponse.json();
+      setUsers(usersData);
+      
+      // Chargement des marchés
+      const marketsResponse = await fetch('/api/markets');
+      const marketsData = await marketsResponse.json();
+      setMarkets(marketsData);
+      
+      // Chargement des produits
+      const productsResponse = await fetch('/api/products');
+      const productsData = await productsResponse.json();
+      setProducts(productsData);
+      
+      // Chargement des localisations
+      const locationsData = Object.values(Location);
+      setLocations(locationsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Gestionnaires d'événements
   const handleCreateUser = async (e: React.FormEvent) => {
