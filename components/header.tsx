@@ -23,6 +23,8 @@ export function Header() {
 
   // Détecter le défilement pour ajouter des effets visuels au header
   useEffect(() => {
+    console.log(user, isLoading);
+    
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
@@ -64,7 +66,7 @@ export function Header() {
 
         {/* Navigation Links - Desktop */}
         <div className="hidden md:flex items-center justify-center flex-1 max-w-2xl mx-4">
-          {isLoading && session && <MainNav userRole={user?.role} />}
+          {!isLoading && session && <MainNav userRole={user?.role} />}
         </div>
 
         {/* Right Side Actions */}
