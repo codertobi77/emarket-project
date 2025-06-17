@@ -5,12 +5,7 @@ import { Jwt, JwtPayload } from "jsonwebtoken";
 import { log } from "node:util";
 
 export const dynamic = 'force-dynamic';
-export const getStaticProps = async () => {
-  return {
-    props: {},
-    revalidate: 1, // ou une autre valeur qui convient à votre application
-  };
-};
+
 export async function GET(req: NextRequest, searchParams: { [key: string]: string }) {
   try {
     const marketId = searchParams.marketId;
