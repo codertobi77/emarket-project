@@ -111,7 +111,6 @@ export const requireRole = (handler: any, allowedRoles: string[]) => {
 };
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },
@@ -159,8 +158,8 @@ export const authOptions: NextAuthOptions = {
     async session({ token, session }) {
       if (token) {
         session.user.id = token.id;
-        session.user.name = token.name;
-        session.user.email = token.email;
+        session.user.name = token.name || "";
+        session.user.email = token.email || "";
         session.user.role = token.role as Role;
       }
 
@@ -182,8 +181,8 @@ export const authOptions: NextAuthOptions = {
 
       return {
         id: dbUser.id,
-        name: dbUser.name,
-        email: dbUser.email,
+        name: dbUser.name || "",
+        email: dbUser.email || "",
         role: dbUser.role,
       };
     },
