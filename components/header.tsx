@@ -66,7 +66,7 @@ export function Header() {
 
         {/* Navigation Links - Desktop */}
         <div className="hidden md:flex items-center justify-center flex-1 max-w-2xl mx-4">
-          {session && <MainNav userRole={user?.role} />}
+          {user && <MainNav userRole={user?.role} />}
         </div>
 
         {/* Right Side Actions */}
@@ -75,7 +75,7 @@ export function Header() {
           <ModeToggle />
           
           {/* User Section */}
-          { !session ? (
+          { !user ? (
             <div className="hidden sm:flex items-center space-x-2">
               <Link href="/auth/login">
                 <Button variant="ghost" size="sm" className="text-foreground/80 hover:text-foreground hover:bg-primary/5 transition-all duration-200 rounded-xl">
