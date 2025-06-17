@@ -4,9 +4,11 @@ import jwt from 'jsonwebtoken';
 import { User } from '@/types';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { compare } from 'bcrypt';
+import { compare } from 'bcryptjs';
 import prisma from "@/lib/db";
 import { useSession } from '@/lib/use-session'
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { Role } from "@prisma/client";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
 
@@ -109,9 +111,9 @@ export const requireRole = (handler: any, allowedRoles: string[]) => {
 };
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 jours
   },
   pages: {
     signIn: "/auth/login",
@@ -121,42 +123,28 @@ export const authOptions: NextAuthOptions = {
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Mot de passe", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email et mot de passe requis");
+          return null;
         }
 
         const user = await prisma.user.findUnique({
           where: {
-            email: credentials.email
+            email: credentials.email,
           },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            password: true,
-            role: true,
-          }
         });
 
-        
-
         if (!user) {
-          throw new Error("Aucun utilisateur trouvé avec cet email");
+          return null;
         }
 
-        const isPasswordValid = await compare(
-          credentials.password,
-          user.password
-        );
+        const isPasswordValid = await compare(credentials.password, user.password);
 
         if (!isPasswordValid) {
-          throw new Error("Mot de passe incorrect");
+          return null;
         }
-
-
 
         return {
           id: user.id,
@@ -164,34 +152,40 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
         };
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
+    async session({ token, session }) {
+      if (token) {
         session.user.id = token.id;
-        session.user.role = token.role;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.role = token.role as Role;
       }
+
       return session;
     },
-  },
-  cookies: {
-    sessionToken: {
-      name: 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
+    async jwt({ token, user }) {
+      const dbUser = await prisma.user.findFirst({
+        where: {
+          email: token.email!,
+        },
+      });
+
+      if (!dbUser) {
+        if (user) {
+          token.id = user?.id;
+        }
+        return token;
+      }
+
+      return {
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        role: dbUser.role,
+      };
     },
   },
 };
