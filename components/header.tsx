@@ -176,7 +176,7 @@ export function Header() {
         <div className="fixed inset-x-0 top-16 bottom-0 z-50 bg-background/98 backdrop-blur-md md:hidden overflow-y-auto">
           <div className="container py-8 px-6 flex flex-col divide-y divide-border/30">
             {/* Mobile User Profile - Show only if logged in */}
-            {session && (
+            {user && (
               <div className="pb-6 mb-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-md">
@@ -213,7 +213,7 @@ export function Header() {
             )}
             
             {/* Navigation Links modernisés */}
-            <div className={cn("py-6", session ? "" : "pt-0")}>
+            <div className={cn("py-6", user ? "" : "pt-0")}>
               <h3 className="text-sm font-semibold text-primary/80 mb-4 tracking-wider">NAVIGATION</h3>
               <nav className="grid gap-3">
                 <Link
@@ -243,7 +243,7 @@ export function Header() {
                   <span className="font-medium">Produits</span>
                 </Link>
                 
-                {session && (user?.role === 'SELLER' || user?.role === 'ADMIN') && (
+                {user && (user?.role === 'SELLER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/seller"
                     className={cn(
@@ -259,7 +259,7 @@ export function Header() {
                   </Link>
                 )}
                 
-                {session && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
+                {user && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/manager"
                     className={cn(
