@@ -7,7 +7,7 @@ import { MainNav } from "@/components/main-nav";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, User, Menu, X, LogOut, Home, ShoppingCart, ChevronDown, Settings, Store, Package } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
-import { useSession } from '@/lib/use-session';
+import { useAccount } from '@/lib/use-account';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -18,19 +18,18 @@ export function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { session, isLoading } = useSession();
-  const user = session?.user;
+  const { account, isLoading } = useAccount();
+  const user = account;
 
   // Détecter le défilement pour ajouter des effets visuels au header
   useEffect(() => {
-    console.log(user.image);
     
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [user]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -92,12 +91,12 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                {user?.image && (
+                {user?.image ? (
                   <Image
                     src={user?.image}
                     alt={user?.name || 'User Avatar'}
-                    width={112}
-                    height={112}
+                    width={24}
+                    height={24}
                     className="h-28 w-28 rounded-full object-cover border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer"
                     onError={(e) => {
                       console.error('Erreur de chargement de l\'image:', e.currentTarget.src, 'Image originale:', user?.image);
@@ -105,6 +104,10 @@ export function Header() {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
+                ) : (
+                  <div className="h-28 w-28 rounded-full flex items-center justify-center bg-primary/10 text-primary text-2xl border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer">
+                    {user?.name?.charAt(0) || 'U'}
+                  </div>
                 )}
                 </Button>
               </DropdownMenuTrigger>
