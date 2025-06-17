@@ -335,7 +335,7 @@ export default function MarketProductsPage() {
                   <SelectContent>
                     <SelectItem value="all">Tous les vendeurs</SelectItem>
                     {sellers.map((seller) => (
-                      <SelectItem key={seller.id} value={seller.id}>
+                      <SelectItem key={seller.id} value={seller.id || ''}>
                         {seller.name}
                       </SelectItem>
                     ))}

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Market, Product, Location } from "@/types";
+import { User, Market, Product, Location, Role } from "@/types";
 import { 
   Users, Store, ShoppingBag, Package, Plus, Edit, Trash, UserPlus, 
   Settings, Building, MapPin, ArrowRight, BarChart, PieChart, 
@@ -85,7 +85,8 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     email: "",
     password: "",
     role: "USER",
-    image: ""
+    image: "",
+    location: "COTONOU"
   });
   
   const [newMarket, setNewMarket] = useState<Omit<Market, 'id' | 'createdAt' | 'updatedAt' | 'marketSellers' | 'manager'>>({
@@ -188,6 +189,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
           email: "",
           password: "",
           role: "USER",
+          location: "COTONOU",
           image: ""
         });
       }
@@ -659,7 +661,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                                 {user.role}
                               </Badge>
                             </TableCell>
-                            <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                            <TableCell>{user.createdAt instanceof Date ? user.createdAt.toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell className="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -1290,7 +1292,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                 <Label htmlFor="role">Rôle</Label>
                 <Select 
                   value={updatedUser.role} 
-                  onValueChange={(value) => setUpdatedUser({...updatedUser, role: value})}
+                  onValueChange={(value) => setUpdatedUser({...updatedUser, role: value as Role})}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un rôle" />
@@ -1509,7 +1511,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                     {users
                       .filter(user => user.role === 'MANAGER')
                       .map(manager => (
-                        <SelectItem key={manager.id} value={manager.id as string}>
+                        <SelectItem key={manager.id} value={manager.id || ''}>
                           {manager.name}
                         </SelectItem>
                       ))
@@ -1593,7 +1595,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                 <Label htmlFor="update-market-description">Description</Label>
                 <Textarea 
                   id="update-market-description" 
-                  value={updatedMarket.description} 
+                  value={updatedMarket.description || ''}
                   onChange={(e) => setUpdatedMarket({...updatedMarket, description: e.target.value})}
                   placeholder="Description du marché..." 
                   rows={3} 
@@ -1612,7 +1614,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                     {users
                       .filter(user => user.role === 'MANAGER')
                       .map(manager => (
-                        <SelectItem key={manager.id} value={manager.id}>
+                        <SelectItem key={manager.id} value={manager.id || ''}>
                           {manager.name}
                         </SelectItem>
                       ))
