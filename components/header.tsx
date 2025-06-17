@@ -93,8 +93,8 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Image
-                    src={user?.image || '/assets/avatars/default.png'}
-                    alt={user?.name || ''}
+                    src={user?.image || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`}
+                    alt={user?.name || 'User Avatar'}
                     className="h-8 w-8 rounded-full"
                     width={32}
                     height={32}
@@ -170,7 +170,7 @@ export function Header() {
               <div className="pb-6 mb-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-md">
-                    <AvatarImage src={user?.image || `https://ui-avatars.com/api/?name=${user?.name}&background=random`} />
+                    <AvatarImage src={user?.image || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`} />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10">
                       {user?.name?.charAt(0) || 'U'}
                     </AvatarFallback>
