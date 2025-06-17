@@ -40,7 +40,7 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative overflow-hidden">
           {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/40 to-accent/20 z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent z-10"></div>
           
           {/* Background image with parallax effect */}
           <div className="absolute inset-0 z-0">
@@ -54,16 +54,16 @@ export default function Home() {
           </div>
           
           {/* Hero Content */}
-          <div className="container relative z-20 px-4 md:px-6 py-20 md:py-32 min-h-[90vh] flex items-center">
+          <div className="container relative z-20 px-4 md:px-6 py-20 md:py-32 min-h-[90vh] flex items-center justify-center">
             <div className="max-w-3xl">
-              <div className="p-8 md:p-10 backdrop-blur-md bg-background/70 rounded-3xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] border border-white/30">
+              <div className="mx-auto max-w-3xl p-8 md:p-10 rounded-3xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] ">
                 {(!user?.role || ['BUYER', 'SELLER', 'MANAGER', 'ADMIN'].includes(user?.role)) && (
                   <>
                     <div className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                      Découvrez le système officiel de gestion des marchés régionaux du Bénin
+                      Découvrez les marchés locaux du Bénin
                     </div>
                     <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 leading-tight">
-                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Plateforme</span> de gestion des marchés du Bénin
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Plateforme</span> digitale des marchés du Bénin
                     </h1>
                     <p className="text-lg md:text-xl mb-8 leading-relaxed text-foreground/80">
                       Connectez-vous avec les marchés locaux, découvrez des produits authentiques, 
@@ -75,14 +75,14 @@ export default function Home() {
                   {(!user?.role || user?.role === 'BUYER') && (
                     <Link href="/marketplace">
                       <Button size="lg" className="w-full sm:w-auto group transition-all duration-300 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-primary/30 rounded-xl">
-                        Explorer les produits
+                        Explorer les marchés
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                   )}
                   {!user && (
                     <Link href="/auth/register">
-                      <Button variant="outline" size="lg" className="w-full sm:w-auto backdrop-blur-sm bg-white/10 border-primary/20 hover:bg-white/20 text-primary hover:text-primary/90 hover:border-primary/50 transition-all duration-300 rounded-xl">
+                      <Button variant="outline" size="lg" className="w-full sm:w-auto border-primary/20 hover:border-primary/50 transition-all duration-300 rounded-xl">
                         Créer un compte
                       </Button>
                     </Link>
@@ -91,7 +91,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-          
           {/* Decorative wave */}
           <div className="absolute bottom-0 left-0 right-0 h-16 md:h-24 z-10 overflow-hidden">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="absolute bottom-0 w-full h-auto">
@@ -363,5 +362,4 @@ export default function Home() {
       <Footer />
     </div>
   );
-}
 }

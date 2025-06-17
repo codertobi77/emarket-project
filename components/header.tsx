@@ -64,7 +64,7 @@ export function Header() {
 
         {/* Navigation Links - Desktop */}
         <div className="hidden md:flex items-center justify-center flex-1 max-w-2xl mx-4">
-          {status !== "loading" && session && <MainNav userRole={user?.role} />}
+          {isLoading && session && <MainNav userRole={user?.role} />}
         </div>
 
         {/* Right Side Actions */}
@@ -73,7 +73,7 @@ export function Header() {
           <ModeToggle />
           
           {/* User Section */}
-          {status === "loading" ? (
+          {isLoading ? (
             <div className="w-8 h-8 rounded-full bg-primary/10 animate-pulse"></div>
           ) : !session ? (
             <div className="hidden sm:flex items-center space-x-2">
@@ -92,10 +92,13 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.image} alt={user?.name || ''} />
-                    <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
-                  </Avatar>
+                  <Image
+                    src={user?.image || '/assets/avatars/default.png'}
+                    alt={user?.name || ''}
+                    className="h-8 w-8 rounded-full"
+                    width={32}
+                    height={32}
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -163,7 +166,7 @@ export function Header() {
         <div className="fixed inset-x-0 top-16 bottom-0 z-50 bg-background/98 backdrop-blur-md md:hidden overflow-y-auto">
           <div className="container py-8 px-6 flex flex-col divide-y divide-border/30">
             {/* Mobile User Profile - Show only if logged in */}
-            {status !== "loading" && session && (
+            {isLoading && session && (
               <div className="pb-6 mb-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-md">
@@ -230,7 +233,7 @@ export function Header() {
                   <span className="font-medium">Produits</span>
                 </Link>
                 
-                {status !== "loading" && session && (user?.role === 'SELLER' || user?.role === 'ADMIN') && (
+                {isLoading && session && (user?.role === 'SELLER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/seller"
                     className={cn(
@@ -246,7 +249,7 @@ export function Header() {
                   </Link>
                 )}
                 
-                {status !== "loading" && session && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
+                {isLoading && session && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/manager"
                     className={cn(
