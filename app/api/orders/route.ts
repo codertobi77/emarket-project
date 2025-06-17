@@ -3,13 +3,7 @@ import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export const dynamic = 'error';
-export const getStaticProps = async () => {
-  return {
-    props: {},
-    revalidate: 1, // ou une autre valeur qui convient à votre application
-  };
-};
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
