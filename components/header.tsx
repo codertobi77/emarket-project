@@ -66,7 +66,7 @@ export function Header() {
 
         {/* Navigation Links - Desktop */}
         <div className="hidden md:flex items-center justify-center flex-1 max-w-2xl mx-4">
-          {!isLoading && session && <MainNav userRole={user?.role} />}
+          {session && <MainNav userRole={user?.role} />}
         </div>
 
         {/* Right Side Actions */}
@@ -75,9 +75,7 @@ export function Header() {
           <ModeToggle />
           
           {/* User Section */}
-          {isLoading ? (
-            <div className="w-8 h-8 rounded-full bg-primary/10 animate-pulse"></div>
-          ) : !session ? (
+          { !session ? (
             <div className="hidden sm:flex items-center space-x-2">
               <Link href="/auth/login">
                 <Button variant="ghost" size="sm" className="text-foreground/80 hover:text-foreground hover:bg-primary/5 transition-all duration-200 rounded-xl">
@@ -168,7 +166,7 @@ export function Header() {
         <div className="fixed inset-x-0 top-16 bottom-0 z-50 bg-background/98 backdrop-blur-md md:hidden overflow-y-auto">
           <div className="container py-8 px-6 flex flex-col divide-y divide-border/30">
             {/* Mobile User Profile - Show only if logged in */}
-            {isLoading && session && (
+            {session && (
               <div className="pb-6 mb-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-md">
@@ -205,7 +203,7 @@ export function Header() {
             )}
             
             {/* Navigation Links modernisés */}
-            <div className={cn("py-6", status !== "loading" && session ? "" : "pt-0")}>
+            <div className={cn("py-6", session ? "" : "pt-0")}>
               <h3 className="text-sm font-semibold text-primary/80 mb-4 tracking-wider">NAVIGATION</h3>
               <nav className="grid gap-3">
                 <Link
@@ -235,7 +233,7 @@ export function Header() {
                   <span className="font-medium">Produits</span>
                 </Link>
                 
-                {isLoading && session && (user?.role === 'SELLER' || user?.role === 'ADMIN') && (
+                {session && (user?.role === 'SELLER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/seller"
                     className={cn(
@@ -251,7 +249,7 @@ export function Header() {
                   </Link>
                 )}
                 
-                {isLoading && session && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
+                {session && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
                   <Link
                     href="/manager"
                     className={cn(
