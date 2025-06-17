@@ -23,7 +23,7 @@ export function Header() {
 
   // Détecter le défilement pour ajouter des effets visuels au header
   useEffect(() => {
-    console.log(user, isLoading);
+    console.log(user.image);
     
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -92,13 +92,20 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                {user?.image && (
                   <Image
-                    src={user?.image || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`}
+                    src={user?.image}
                     alt={user?.name || 'User Avatar'}
-                    className="h-8 w-8 rounded-full"
-                    width={32}
-                    height={32}
+                    width={112}
+                    height={112}
+                    className="h-28 w-28 rounded-full object-cover border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer"
+                    onError={(e) => {
+                      console.error('Erreur de chargement de l\'image:', e.currentTarget.src, 'Image originale:', user?.image);
+                      // Afficher une lettre à la place de l'image en cas d'erreur
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
+                )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
