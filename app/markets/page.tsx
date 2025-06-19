@@ -55,11 +55,7 @@ export default function MarketsPage() {
       <Header />
       
       {/* Hero Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-primary to-accent py-16 md:py-24">
-        {/* Pattern d'arrière-plan */}
-        <div className="absolute inset-0 bg-[url('/assets/pattern.svg')] bg-repeat opacity-5"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-accent/20"></div>
-        
+      <div className="relative overflow-hidden bg-[url('/assets/market-pattern.svg')] bg-repeat py-16 md:py-24">
         {/* Formes décoratives */}
         <div className="absolute top-20 right-10 w-72 h-72 bg-white/10 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
         <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full filter blur-3xl opacity-20"></div>

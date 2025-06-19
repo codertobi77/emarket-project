@@ -38,7 +38,7 @@ export default function Home() {
       <Header />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden bg-background">
           {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent z-10"></div>
           
@@ -56,7 +56,7 @@ export default function Home() {
           {/* Hero Content */}
           <div className="container relative z-20 px-4 md:px-6 py-20 md:py-32 min-h-[90vh] flex items-center justify-center">
             <div className="max-w-3xl">
-              <div className="mx-auto max-w-3xl p-8 md:p-10 rounded-3xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] ">
+              <div className="mx-auto max-w-3xl p-8 md:p-10 rounded-3xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] bg-transparent backdrop-blur-sm">
                 {(!user?.role || ['BUYER', 'SELLER', 'MANAGER', 'ADMIN'].includes(user?.role)) && (
                   <>
                     <div className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">

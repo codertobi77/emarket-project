@@ -34,45 +34,76 @@ export default function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
 
- 
+    const formData = new FormData();
+    if (image) {
+      formData.append("file", new Blob([image], { type: "image/" }));
+      formData.append("folder", "users-img");
+      
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (response.ok) {
+          const { url } = await response.json();
+          try {
+            const response = await fetch("/api/auth/register", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                name,
+                email,
+                location,
+                role: "BUYER",
+                password,
+                image: url,
+              }),
+            });
 
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          location,
-          role: "BUYER",
-          password,
-          image,
-        }),
-      });
+            const data = await response.json();
 
-      const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.message || "Erreur lors de l'inscription");
+            }
 
-      if (!response.ok) {
-        throw new Error(data.message || "Erreur lors de l'inscription");
+            toast({
+              title: "Inscription réussie",
+              description: "Vous pouvez maintenant vous connecter",
+            });
+
+            router.push("/auth/login");
+          } catch (error) {
+            toast({
+              title: "Erreur",
+              description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'inscription",
+              variant: "destructive",
+            });
+          } finally {
+            setIsLoading(false);
+          }
+        } else {
+          toast({
+            title: "Erreur lors de l'upload de l'image",
+            description: "Veuillez réessayer",
+            variant: "destructive",
+          });
+
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'upload de l'image:", error);
+        toast({
+          title: "Erreur lors de l'upload de l'image",
+          description: "Veuillez réessayer",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
-
-      toast({
-        title: "Inscription réussie",
-        description: "Vous pouvez maintenant vous connecter",
-      });
-
-      router.push("/auth/login");
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'inscription",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
+
+    
   };
 
   return (
@@ -171,6 +202,13 @@ export default function RegisterPage() {
                       };
                       reader.readAsDataURL(file);
                     }
+                    else {
+                      toast({
+                        title: "Format d'image invalide",
+                        description: "Veuillez choisir une image valide",
+                        variant: "destructive",
+                      });
+                    }
                   }}
                 >
                   <Input
@@ -180,13 +218,19 @@ export default function RegisterPage() {
                     className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
+                      if (file && file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onloadend = () => {
                           setImage(reader.result as string);
                         };
                         reader.readAsDataURL(file);
-                      }
+                      } else {
+                      toast({
+                        title: "Format d'image invalide",
+                        description: "Veuillez choisir une image valide",
+                        variant: "destructive",
+                      });
+                    }
                     }}
                   />
                   <label htmlFor="user-image" className="cursor-pointer">

@@ -7,8 +7,9 @@ import { MainNav } from "@/components/main-nav";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, User, Menu, X, LogOut, Home, ShoppingCart, ChevronDown, Settings, Store, Package } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
-import { useAccount } from '@/lib/use-account';
+import { useSession } from '@/lib/use-session';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getNormalizedImagePath } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
@@ -18,11 +19,12 @@ export function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { account, isLoading } = useAccount();
-  const user = account;
+  const { session, isLoading } = useSession();
+  const user = session?.user;
 
   // Détecter le défilement pour ajouter des effets visuels au header
   useEffect(() => {
+    console.log(user);
     
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -93,7 +95,7 @@ export function Header() {
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 {user?.image ? (
                   <Image
-                    src={user?.image}
+                    src={getNormalizedImagePath(user?.image)}
                     alt={user?.name || 'User Avatar'}
                     width={24}
                     height={24}
@@ -180,7 +182,7 @@ export function Header() {
               <div className="pb-6 mb-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-md">
-                    <AvatarImage src={user?.image || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`} />
+                    <AvatarImage src={getNormalizedImagePath(user?.image) || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`} />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10">
                       {user?.name?.charAt(0) || 'U'}
                     </AvatarFallback>

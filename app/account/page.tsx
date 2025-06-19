@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, ShieldCheck, Bell, Package, CreditCard, Settings, AlertTriangle } from "lucide-react";
 import { CertifiedSellerDialog } from "@/components/certified-seller-dialog";
 import { ProfileImageUploader } from "@/components/profile-image-uploader";
+import { getNormalizedImagePath } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import { useAccount } from '@/lib/use-account';
 import Image from 'next/image';

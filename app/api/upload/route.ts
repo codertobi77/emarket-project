@@ -9,17 +9,15 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const imageData = formData.get('imageData') as string;
+    const imageData = file.type
+    const folder = formData.get('folder') as string;
 
-    if (!file || !imageData) {
+    console.log(imageData);
+    
+    if (!file || !folder) {
       return NextResponse.json(
         { error: 'Fichier ou données d\'image manquants' },
         { status: 400 }
@@ -50,14 +48,14 @@ export async function POST(request: NextRequest) {
     const filename = `${uniqueId}.${extension}`;
 
     // Définir le chemin de sauvegarde
-    const uploadDir = join(process.cwd(), 'public', 'assets', 'users-img');
+    const uploadDir = join(process.cwd(), 'public', 'assets', folder);
     const filePath = join(uploadDir, filename);
     // Sauvegarder le fichier
     await writeFile(filePath, new Uint8Array(buffer));
 
     // Retourner le chemin de l'image
-    const imagePath = `/assets/users-img/${filename}`;
-    return NextResponse.json({ imagePath });
+    const url = `/assets/${folder}/${filename}`;
+    return NextResponse.json({ url });
   } catch (error) {
     console.error('Erreur lors du téléchargement:', error);
     return NextResponse.json(

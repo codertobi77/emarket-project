@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { getNormalizedImagePath } from '@/lib/utils';
 import { processImage, validateImage } from '@/lib/image-utils';
 
 
@@ -58,8 +59,9 @@ export function ProfileImageUploader({
 
           // Créer un FormData pour l'envoi
           const formData = new FormData();
-          formData.append('file', file);
-          formData.append('imageData', processedImage);
+          // Utilise processedImage si c'est un Blob, sinon file
+          formData.append('file', processedImage as any instanceof Blob ? processedImage : file);
+          formData.append('folder', 'users-img');
 
           // Envoyer l'image au serveur
           const response = await fetch('/api/upload', {
@@ -72,7 +74,7 @@ export function ProfileImageUploader({
           }
 
           const data = await response.json();
-          onImageUploaded(data.imagePath);
+          onImageUploaded(data.url);
           
           toast({
             title: "Succès",
@@ -113,7 +115,7 @@ export function ProfileImageUploader({
 
   return (
     <div className="relative group">
-      {/*<div className="relative w-32 h-32 rounded-full overflow-hidden">
+      {/* <div className="relative w-32 h-32 rounded-full overflow-hidden">
         {currentImage ? (
           <img
             src={currentImage}
@@ -136,7 +138,7 @@ export function ProfileImageUploader({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
           </div>
         )}
-      </div>*/}
+      </div> */}
       <input
         type="file"
         ref={fileInputRef}
@@ -147,7 +149,7 @@ export function ProfileImageUploader({
         {/* Check if currentImage exists before displaying */}
         {currentImage ? (
           <Image
-            src={currentImage}
+            src={getNormalizedImagePath(currentImage)}
             alt={name}
             width={112}
             height={112}
