@@ -123,175 +123,178 @@ export default function RegisterPage() {
       </div>
 
       <div className="container relative z-10 px-4 md:px-6">
-        <div className="mx-auto max-w-[400px]">
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Inscription</CardTitle>
-              <CardDescription className="text-center">
-                Créez votre compte pour commencer
-              </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nom Complet</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Votre nom"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="votre@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">Emplacement</Label>
-                <Select 
-                  value={location}
-                  onValueChange={(value) => setLocation(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un emplacement" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((loc) => (
-                      <SelectItem key={loc.toString()} value={loc.toString()}>
-                        {loc.toString()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="user-image">Image de profil</Label>
-                <div 
-                  className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const file = e.dataTransfer.files?.[0];
-                    if (file && file.type.startsWith('image/')) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setImage(reader.result as string);
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                    else {
-                      toast({
-                        title: "Format d'image invalide",
-                        description: "Veuillez choisir une image valide",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
+        <main aria-label="Inscription à la plateforme">
+          <div className="mx-auto max-w-[400px]">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl font-bold text-center">Inscription</CardTitle>
+                <CardDescription className="text-center">
+                  Créez votre compte pour commencer
+                </CardDescription>
+              </CardHeader>
+              <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nom Complet</Label>
                   <Input
-                    id="user-image"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
+                    id="name"
+                    type="text"
+                    placeholder="Votre nom"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Emplacement</Label>
+                  <Select 
+                    value={location}
+                    onValueChange={(value) => setLocation(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un emplacement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc.toString()} value={loc.toString()}>
+                          {loc.toString()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Mot de passe</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="user-image">Image de profil</Label>
+                  <div 
+                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                    tabIndex={0}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const file = e.dataTransfer.files?.[0];
                       if (file && file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onloadend = () => {
                           setImage(reader.result as string);
                         };
                         reader.readAsDataURL(file);
-                      } else {
-                      toast({
-                        title: "Format d'image invalide",
-                        description: "Veuillez choisir une image valide",
-                        variant: "destructive",
-                      });
-                    }
+                      }
+                      else {
+                        toast({
+                          title: "Format d'image invalide",
+                          description: "Veuillez choisir une image valide",
+                          variant: "destructive",
+                        });
+                      }
                     }}
-                  />
-                  <label htmlFor="user-image" className="cursor-pointer">
-                    {image ? (
-                      <div className="relative">
-                        <img
-                          src={image}
-                          alt="Aperçu de l'image de profil"
-                          className="mx-auto rounded-md w-32 h-32 object-cover border"
-                        />
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Cliquez ou glissez-déposez pour changer l'image
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-muted-foreground"
-                          >
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                          </svg>
+                  >
+                    <Input
+                      id="user-image"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file && file.type.startsWith('image/')) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setImage(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        } else {
+                        toast({
+                          title: "Format d'image invalide",
+                          description: "Veuillez choisir une image valide",
+                          variant: "destructive",
+                        });
+                      }
+                      }}
+                    />
+                    <label htmlFor="user-image" className="cursor-pointer">
+                      {image ? (
+                        <div className="relative">
+                          <img
+                            src={image}
+                            alt="Aperçu de l'image de profil"
+                            className="mx-auto rounded-md w-32 h-32 object-cover border"
+                          />
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Cliquez ou glissez-déposez pour changer l'image
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Cliquez ou glissez-déposez une image ici
-                        </p>
-                      </div>
-                    )}
-                  </label>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-muted-foreground"
+                            >
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                              <polyline points="17 8 12 3 7 8" />
+                              <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Cliquez ou glissez-déposez une image ici
+                          </p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Inscription..." : "S'inscrire"}
-              </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                Déjà un compte ?{" "}
-                <Link href="/auth/login" className="text-primary hover:underline">
-                  Se connecter
-                </Link>
-              </p>
-            </CardFooter>
-            </form>
-          </Card>
-        </div>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-4">
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Inscription..." : "S'inscrire"}
+                </Button>
+                <p className="text-sm text-center text-muted-foreground">
+                  Déjà un compte ?{" "}
+                  <Link href="/auth/login" className="text-primary hover:underline">
+                    Se connecter
+                  </Link>
+                </p>
+              </CardFooter>
+              </form>
+            </Card>
+          </div>
+        </main>
       </div>
     </div>
   );

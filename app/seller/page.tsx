@@ -207,7 +207,7 @@ export default function SellerDashboardPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
       <Header />
-      <main className="flex-1 container py-8">
+      <main className="flex-1 container py-8" aria-label="Tableau de bord vendeur">
         {/* En-tête avec statistiques */}
         <div className="mb-10">
           {/* Ligne supérieure avec titre et bouton */}

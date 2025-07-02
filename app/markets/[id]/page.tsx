@@ -33,6 +33,7 @@ export default function MarketProductsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const { data: session } = useSession();
   const user = session?.user;
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (marketId) {
@@ -48,10 +49,12 @@ export default function MarketProductsPage() {
       const params = new URLSearchParams();
       if (marketId) params.append("marketId", marketId as string);
       const response = await fetch(`/api/markets?${params.toString()}`);
+      if (!response.ok) throw new Error("Erreur lors du chargement du marché");
       const data = await response.json();
       setMarket(data);
       setIsLoading(false);
     } catch (error) {
+      setFetchError("Impossible de charger le marché. Veuillez réessayer plus tard.");
       console.error("Error fetching market:", error);
     }
   };
@@ -64,6 +67,7 @@ export default function MarketProductsPage() {
       if (category && category !== 'all') params.append("category", category);
 
       const response = await fetch(`/api/products?${params.toString()}`);
+      if (!response.ok) throw new Error("Erreur lors du chargement des produits");
       const data = await response.json();
       console.log('Produits récupérés depuis l\'API pour le marché:', data);
       
@@ -73,6 +77,7 @@ export default function MarketProductsPage() {
       });
       setProducts(data);
     } catch (error) {
+      setFetchError("Impossible de charger les produits. Veuillez réessayer plus tard.");
       console.error("Error fetching products:", error);
     } finally {
       setIsLoading(false);
@@ -237,7 +242,7 @@ export default function MarketProductsPage() {
             <div className="w-full md:w-1/3 lg:w-1/4 aspect-square rounded-2xl overflow-hidden border-4 border-white/20 shadow-xl relative">
             <img
                     src={getNormalizedImagePath(market?.image || "")}
-                    alt={market?.name}
+                    alt={market?.name ? `Photo du marché ${market?.name}` : "Photo de marché local"}
                     className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
                       console.error(`Erreur de chargement de l'image pour ${market?.name}:`, market?.image);
@@ -282,7 +287,12 @@ export default function MarketProductsPage() {
         </div>
       </div>
       
-      <main className="flex-1 container py-12 relative z-20">
+      <main className="flex-1 container py-12 relative z-20" aria-label="Produits du marché">
+        {fetchError && (
+          <div className="text-center py-8">
+            <div className="mb-4 text-red-600">{fetchError}</div>
+          </div>
+        )}
         {/* Barre de recherche et filtres */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
@@ -396,7 +406,7 @@ export default function MarketProductsPage() {
                   )}
                   <img
                     src={getNormalizedImagePath(product.image || "")}
-                    alt={product.name}
+                    alt={product.name ? `Photo du produit ${product.name}` : "Photo de produit local"}
                     className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
                       console.error(`Erreur de chargement de l'image pour ${product.name}:`, product.image);

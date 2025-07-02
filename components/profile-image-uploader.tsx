@@ -150,7 +150,7 @@ export function ProfileImageUploader({
         {currentImage ? (
           <Image
             src={getNormalizedImagePath(currentImage)}
-            alt={name}
+            alt={name ? `Photo de profil de ${name}` : 'Photo de profil utilisateur'}
             width={112}
             height={112}
             className="h-28 w-28 rounded-full object-cover border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer"
@@ -175,6 +175,7 @@ export function ProfileImageUploader({
           }
         }}
         disabled={isLoading}
+        aria-label="Changer la photo de profil"
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />

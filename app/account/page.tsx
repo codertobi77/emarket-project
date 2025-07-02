@@ -175,7 +175,7 @@ export default function AccountPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 container py-10">
+      <main className="flex-1 container py-10" aria-label="Mon compte">
         {/* En-tête du profil */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div className="flex items-center gap-4">

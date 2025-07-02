@@ -67,52 +67,54 @@ export default function LoginPage() {
       </div>
 
       <div className="container relative z-10 px-4 md:px-6">
-        <div className="mx-auto max-w-[400px]">
-          <Card className="bg-card/80 backdrop-blur-sm border-border/50">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Connexion</CardTitle>
-              <CardDescription className="text-center">
-                Entrez vos identifiants pour accéder à votre compte
-              </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="exemple@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Connexion en cours..." : "Se connecter"}
-                </Button>
-                <p className="text-sm text-center text-muted-foreground">
-                  Pas encore de compte ?{" "}
-                  <Link href="/auth/register" className="text-primary hover:underline">
-                    S'inscrire
-                  </Link>
-                </p>
-              </CardFooter>
-            </form>
-          </Card>
-        </div>
+        <main aria-label="Connexion à la plateforme">
+          <div className="mx-auto max-w-[400px]">
+            <Card className="bg-card/80 backdrop-blur-sm border-border/50">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl font-bold text-center">Connexion</CardTitle>
+                <CardDescription className="text-center">
+                  Entrez vos identifiants pour accéder à votre compte
+                </CardDescription>
+              </CardHeader>
+              <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="exemple@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Mot de passe</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-4">
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Connexion en cours..." : "Se connecter"}
+                  </Button>
+                  <p className="text-sm text-center text-muted-foreground">
+                    Pas encore de compte ?{" "}
+                    <Link href="/auth/register" className="text-primary hover:underline">
+                      S'inscrire
+                    </Link>
+                  </p>
+                </CardFooter>
+              </form>
+            </Card>
+          </div>
+        </main>
       </div>
     </div>
   );

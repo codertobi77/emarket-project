@@ -88,6 +88,7 @@ export function Cart() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative h-14 w-14 rounded-full shadow-lg"
         size="icon"
+        aria-label="Ouvrir le panier"
       >
         <ShoppingCart className="h-6 w-6" />
         {totalItems > 0 && (
@@ -99,7 +100,7 @@ export function Cart() {
 
       
       {isOpen && (
-        <Card className="absolute bottom-full right-0 mb-4 w-80 overflow-hidden shadow-xl">
+        <Card className="absolute bottom-full right-0 mb-4 w-80 overflow-hidden shadow-xl" role="dialog" aria-modal="true" aria-label="Panier">
           <CardHeader className="border-b p-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold">Votre Panier</CardTitle>
@@ -128,7 +129,7 @@ export function Cart() {
                       <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border">
                         <img
                           src={item.image || '/placeholder-product.jpg'}
-                          alt={item.name}
+                          alt={item.name ? `Photo du produit ${item.name}` : "Photo de produit local"}
                           className="h-full w-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder-product.jpg';

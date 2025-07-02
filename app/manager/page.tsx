@@ -212,7 +212,7 @@ export default function ManagerDashboardPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
       <Header />
-      <main className="flex-1 container py-8">
+      <main className="flex-1 container py-8" aria-label="Tableau de bord manager">
         {/* En-tête avec titre et statistiques */}
         <div className="mb-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
@@ -226,7 +226,14 @@ export default function ManagerDashboardPage() {
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  className="group bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white shadow-lg hover:shadow-primary/30 transition-all duration-300 px-6 py-6 text-base rounded-xl"
+                  className="group bg-gradient-to-r from-primary to- ○ compiling /api/auth/[...nextauth]/route ...
+ ✓ Compiled /api/auth/[...nextauth]/route in 7.4s (350 modules)
+[next-auth][warn][NEXTAUTH_URL] 
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET] 
+https://next-auth.js.org/warnings#no_secret
+
+accent hover:from-accent hover:to-primary text-white shadow-lg hover:shadow-primary/30 transition-all duration-300 px-6 py-6 text-base rounded-xl"
                 >
                   <Plus className="h-5 w-5 mr-2 group-hover:rotate-180 transition-transform duration-500" />
                   Ajouter une catégorie

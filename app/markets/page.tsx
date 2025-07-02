@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 export default function MarketsPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const { data: session } = useSession();
   const user = session?.user;
 
@@ -23,11 +24,14 @@ export default function MarketsPage() {
 
   const fetchMarkets = async () => {
     setIsLoading(true);
+    setFetchError(null);
     try {
       const response = await fetch("/api/markets");
+      if (!response.ok) throw new Error("Erreur lors du chargement des marchés");
       const data = await response.json();
       setMarkets(data);
     } catch (error) {
+      setFetchError("Impossible de charger les marchés. Veuillez réessayer plus tard.");
       console.error("Error fetching markets:", error);
     } finally {
       setIsLoading(false);
@@ -82,7 +86,12 @@ export default function MarketsPage() {
         </div>
       </div>
       
-      <main className="flex-1 container py-12 md:py-16 relative z-20">
+      <main className="flex-1 container py-12 md:py-16 relative z-20" aria-label="Liste des marchés">
+        {fetchError && (
+          <div className="text-center py-8">
+            <div className="mb-4 text-red-600">{fetchError}</div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {isLoading ? (
             // Squelettes de chargement
@@ -119,7 +128,7 @@ export default function MarketsPage() {
                               ? `/${market.image}` 
                               : `/assets/markets-img/${market.image.split('/').pop()}`
                         : "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"}
-                      alt={market.name}
+                      alt={market.name ? `Photo du marché ${market.name}` : "Photo de marché local"}
                       className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
                         console.error(`Erreur de chargement de l'image pour le marché ${market.name}:`, market.image);

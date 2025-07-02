@@ -15,6 +15,7 @@ export default function Home() {
   const user = session?.user;
   const [markets, setMarkets] = useState<Market[]>([]);
   const [isLoadingMarkets, setIsLoadingMarkets] = useState<boolean>(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMarkets();
@@ -22,11 +23,14 @@ export default function Home() {
 
   const fetchMarkets = async () => {
     setIsLoadingMarkets(true);
+    setFetchError(null);
     try {
       const response = await fetch("/api/markets");
+      if (!response.ok) throw new Error("Erreur lors du chargement des marchés");
       const data = await response.json();
       setMarkets(data);
     } catch (error) {
+      setFetchError("Impossible de charger les marchés. Veuillez réessayer plus tard.");
       console.error("Error fetching markets:", error);
     } finally {
       setIsLoadingMarkets(false);
@@ -36,9 +40,9 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1" id="main-content">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-background">
+        <section className="relative overflow-hidden bg-background" aria-label="Section d'introduction">
           {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent z-10"></div>
           
@@ -100,7 +104,7 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section className="py-24 relative overflow-hidden bg-muted/30">
+        <section className="py-24 relative overflow-hidden bg-muted/30" aria-label="Fonctionnalités de la plateforme">
           {/* Decorative elements in background */}
           <div className="absolute inset-0 overflow-hidden opacity-10">
             <div className="absolute -top-[300px] -right-[300px] w-[600px] h-[600px] rounded-full bg-primary"></div>
@@ -214,7 +218,7 @@ export default function Home() {
         </section>
 
         {/* Markets Showcase */}
-        <section className="py-24 relative overflow-hidden">
+        <section className="py-24 relative overflow-hidden" aria-label="Marchés en vedette">
           {/* Subtle pattern background */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute inset-0" style={{
@@ -239,6 +243,13 @@ export default function Home() {
               </p>
             </div>
             
+            {fetchError && (
+              <div className="flex justify-center items-center py-10">
+                <div className="bg-red-100 text-red-700 px-6 py-4 rounded-xl shadow border border-red-200 text-center">
+                  {fetchError}
+                </div>
+              </div>
+            )}
             {isLoading ? (
               <div className="flex justify-center items-center py-20">
                 <div className="relative w-16 h-16">
@@ -256,6 +267,7 @@ export default function Home() {
                       {/* Image with zoom effect on hover */}
                       <img 
                         src={getNormalizedImagePath(market.image as string)} 
+                        alt={market.name ? `Photo du marché ${market.name}` : "Photo de marché local"}
                         className="absolute inset-0 w-full h-full object-cover scale-100 group-hover:scale-110 transition-transform duration-700 ease-in-out"
                         onError={e => {
                           (e.currentTarget as HTMLImageElement).src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";

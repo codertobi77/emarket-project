@@ -14,6 +14,7 @@ import { Package, ArrowLeft } from 'lucide-react';
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -34,6 +35,7 @@ export default function OrdersPage() {
       const data = await response.json();
       setOrders(data);
     } catch (error) {
+      setFetchError("Impossible de charger les commandes. Veuillez réessayer plus tard.");
       console.error('Erreur lors du chargement des commandes:', error);
     } finally {
       setLoading(false);
@@ -64,7 +66,7 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container py-12">
+      <main className="flex-1 container py-12" aria-label="Mes commandes">
         <div className="max-w-4xl mx-auto">
           <Button
             variant="ghost"
@@ -77,7 +79,12 @@ export default function OrdersPage() {
 
           <h1 className="text-2xl font-bold mb-8">Mes Commandes</h1>
 
-          {orders.length === 0 ? (
+          {fetchError && (
+            <div className="text-center py-8">
+              <div className="mb-4 text-red-600">{fetchError}</div>
+            </div>
+          )}
+          {!fetchError && (orders.length === 0 ? (
             <div className="text-center py-16">
               <div className="mb-6 text-muted-foreground/50 bg-background/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto border border-border/40">
                 <Package className="h-10 w-10" />
@@ -119,7 +126,7 @@ export default function OrdersPage() {
                 </Card>
               ))}
             </div>
-          )}
+          ))}
         </div>
       </main>
       <Footer />

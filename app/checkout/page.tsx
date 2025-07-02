@@ -128,7 +128,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container py-12">
+      <main className="flex-1 container py-12" aria-label="Finaliser la commande">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Finaliser la commande</h1>
           
@@ -179,7 +179,7 @@ export default function CheckoutPage() {
                         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border">
                           <img
                             src={item.image || '/placeholder-product.jpg'}
-                            alt={item.name}
+                            alt={item.name ? `Photo du produit ${item.name}` : "Photo de produit local"}
                             className="h-full w-full object-cover"
                           />
                         </div>

@@ -31,6 +31,7 @@ export default function MarketplacePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -42,11 +43,13 @@ export default function MarketplacePage() {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
+      setFetchError(null);
       const params = new URLSearchParams();
       if (selectedMarket && selectedMarket !== 'all') params.append("marketId", selectedMarket);
       if (category && category !== 'all') params.append("category", category);
 
       const response = await fetch(`/api/products?${params.toString()}`);
+      if (!response.ok) throw new Error("Erreur lors du chargement des produits");
       const data = await response.json();
       
       // Vérifier et normaliser les chemins d'images
@@ -64,6 +67,7 @@ export default function MarketplacePage() {
       
       setProducts(normalizedData);
     } catch (error) {
+      setFetchError("Impossible de charger les produits. Veuillez réessayer plus tard.");
       console.error("Error fetching products:", error);
     } finally {
       setIsLoading(false);
@@ -176,7 +180,7 @@ export default function MarketplacePage() {
         </div>
       </div>
       
-      <main className="flex-1 container py-12 md:py-16 relative z-20">
+      <main className="flex-1 container py-12 md:py-16 relative z-20" aria-label="Marketplace">
         {/* Filtres */}
         <div 
           className={`mb-8 bg-background/80 backdrop-blur-md rounded-2xl border border-border/40 shadow-lg overflow-hidden transition-all duration-500 ease-in-out ${isFilterOpen ? 'max-h-96 opacity-100 mb-8 p-6' : 'max-h-0 opacity-0 mb-0 p-0 border-0'}`}>
@@ -264,6 +268,12 @@ export default function MarketplacePage() {
           </div>
         </div>
         
+        {fetchError && (
+          <div className="text-center py-8">
+            <div className="mb-4 text-red-600">{fetchError}</div>
+          </div>
+        )}
+        
         {/* Grille de produits */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
@@ -292,7 +302,7 @@ export default function MarketplacePage() {
                     <div className="absolute inset-0 overflow-hidden bg-muted/20">
                       <img
                         src={product.normalizedImagePath || "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"}
-                        alt={product.name}
+                        alt={product.name ? `Photo du produit ${product.name}` : "Photo de produit local"}
                         className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover:scale-110"
                         onError={(e) => {
                           e.currentTarget.src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";

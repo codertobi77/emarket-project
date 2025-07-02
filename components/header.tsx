@@ -21,6 +21,7 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { session, isLoading } = useSession();
   const user = session?.user;
+  const [imgError, setImgError] = useState(false);
 
   // Détecter le défilement pour ajouter des effets visuels au header
   useEffect(() => {
@@ -92,25 +93,21 @@ export function Header() {
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                {user?.image ? (
-                  <Image
-                    src={getNormalizedImagePath(user?.image)}
-                    alt={user?.name || 'User Avatar'}
-                    width={24}
-                    height={24}
-                    className="h-28 w-28 rounded-full object-cover border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer"
-                    onError={(e) => {
-                      console.error('Erreur de chargement de l\'image:', e.currentTarget.src, 'Image originale:', user?.image);
-                      // Afficher une lettre à la place de l'image en cas d'erreur
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="h-28 w-28 rounded-full flex items-center justify-center bg-primary/10 text-primary text-2xl border-4 border-primary/10 group-hover:opacity-80 transition-opacity cursor-pointer">
-                    {user?.name?.charAt(0) || 'U'}
-                  </div>
-                )}
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
+                  {user?.image && !imgError ? (
+                    <Image
+                      src={getNormalizedImagePath(user?.image)}
+                      alt={user?.name ? `Avatar de ${user?.name}` : 'Avatar utilisateur'}
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 rounded-full object-cover border-2 border-primary/10"
+                      onError={() => setImgError(true)}
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/10 text-primary text-base border-2 border-primary/10">
+                      {user?.name?.charAt(0) || 'U'}
+                    </div>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>

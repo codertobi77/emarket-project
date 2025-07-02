@@ -57,6 +57,7 @@ export function MainNav({ userRole }: NavProps) {
                 ? "text-primary" 
                 : "text-foreground/70 hover:text-primary"
             )}
+            {...(route.active ? { 'aria-current': 'page' } : {})}
           >
             {route.icon && (
               <div className="relative mr-2">

@@ -36,6 +36,7 @@ export default function AdminDashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const { data: session, status } = useSession();
   const router = useRouter();
   
@@ -142,6 +143,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
+    setFetchError(null);
     try {
       // Chargement des utilisateurs
       const usersResponse = await fetch('/api/users');
@@ -162,6 +164,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
       const locationsData = Object.values(Location);
       setLocations(locationsData);
     } catch (error) {
+      setFetchError("Impossible de charger les données. Veuillez réessayer plus tard.");
       console.error('Erreur lors du chargement des données:', error);
     } finally {
       setIsLoading(false);
@@ -327,7 +330,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     <RoleProtected allowedRoles={["ADMIN"]}>
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/20">
         <Header />
-        <main className="flex-1 container py-8">
+        <main className="flex-1 container py-8" aria-label="Tableau de bord administrateur">
           {/* En-tête de la page */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
@@ -353,6 +356,12 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
               </Button>
             </div>
           </div>
+          
+          {fetchError && (
+            <div className="mb-8 p-4 bg-red-100 text-red-700 rounded-lg text-center">
+              {fetchError}
+            </div>
+          )}
           
           {/* Cartes de statistiques */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
