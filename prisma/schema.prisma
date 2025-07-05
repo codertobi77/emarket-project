@@ -37,13 +37,13 @@ model Market {
   name        String
   location    Location @default(COTONOU)
   description String?
-  managerId   String   
+  managerId   String?  
   image       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  manager   User      @relation(fields: [managerId], references: [id])
+  manager   User?     @relation(fields: [managerId], references: [id])
   marketSellers MarketSellers[] 
 
   @@map("markets")
@@ -102,12 +102,16 @@ model Order {
   buyerId     String
   status      OrderStatus @default(PENDING)
   totalAmount Decimal     @default(0)
+  address     String?     // Adresse de livraison
+  fedapayTransactionId String? // ID de transaction FedaPay
+  paymentStatus PaymentStatus @default(PENDING)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   // Relations
   buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id])
   items       OrderItem[]
+  payments    Payment[]
 
   @@map("orders")
 }
@@ -130,6 +134,24 @@ model OrderItem {
   @@map("order_items")
 }
 
+model Payment {
+  id                    String   @id @default(uuid())
+  orderId               String
+  fedapayTransactionId  String   @unique
+  amount                Decimal
+  currency              String   @default("XOF")
+  status                PaymentStatus @default(PENDING)
+  paymentMethod         String?  // Méthode de paiement utilisée
+  metadata              Json?    // Données supplémentaires de FedaPay
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  order                 Order    @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
 enum Role {
   BUYER
   SELLER
@@ -144,6 +166,15 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
 }
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
 enum Location {
   COTONOU
   BOHICON

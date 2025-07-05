@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +22,11 @@ export async function GET() {
           include: {
             product: true,
             seller: true,
+          },
+        },
+        payments: {
+          orderBy: {
+            createdAt: 'desc',
           },
         },
       },
@@ -64,7 +69,9 @@ export async function POST(request: Request) {
       data: {
         buyerId: session.user.id,
         totalAmount,
+        address,
         status: "PENDING",
+        paymentStatus: "PENDING",
         items: {
           create: items.map((item) => ({
             productId: item.id,
@@ -83,18 +90,6 @@ export async function POST(request: Request) {
         },
       },
     });
-
-    // Mettre à jour le stock des produits
-    for (const item of items) {
-      await prisma.product.update({
-        where: { id: item.id },
-        data: {
-          stock: {
-            decrement: item.quantity,
-          },
-        },
-      });
-    }
 
     return NextResponse.json(order);
   } catch (error) {

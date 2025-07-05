@@ -11,12 +11,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CartItem } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { ShoppingCart, ArrowLeft, CreditCard, MapPin } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, CreditCard, MapPin, Loader2 } from 'lucide-react';
+import { FedaPayButton } from '@/components/fedapay-button';
 
 export default function CheckoutPage() {
   const [address, setAddress] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -42,7 +46,7 @@ export default function CheckoutPage() {
     }
   }, [status, session?.user?.id, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!address.trim()) {
@@ -54,6 +58,8 @@ export default function CheckoutPage() {
       return;
     }
 
+    setIsCreatingOrder(true);
+
     try {
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -62,7 +68,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           items: cart,
-          address,
+          address: address.trim(),
         }),
       });
 
@@ -70,24 +76,37 @@ export default function CheckoutPage() {
         throw new Error('Erreur lors de la création de la commande');
       }
 
-      // Vider le panier
-      const cartKey = `${session?.user?.id}-cart`;
-      localStorage.removeItem(cartKey);
+      const order = await response.json();
+      setOrderId(order.id);
+      setOrderCreated(true);
       
       toast({
-        title: "Commande confirmée",
-        description: "Votre commande a été enregistrée avec succès",
+        title: "Commande créée",
+        description: "Votre commande a été créée avec succès. Vous pouvez maintenant procéder au paiement.",
       });
-
-      router.push('/account/orders');
     } catch (error) {
       console.error('Erreur lors de la commande:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la commande",
+        description: "Une erreur est survenue lors de la création de la commande",
         variant: "destructive"
       });
+    } finally {
+      setIsCreatingOrder(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Vider le panier après paiement réussi
+    const cartKey = `${session?.user?.id}-cart`;
+    localStorage.removeItem(cartKey);
+    
+    toast({
+      title: "Paiement réussi",
+      description: "Votre commande a été payée avec succès !",
+    });
+
+    router.push('/account/orders');
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -95,7 +114,14 @@ export default function CheckoutPage() {
   const total = subtotal + shipping;
 
   if (loading || status === "loading") {
-    return <div>Chargement...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p>Chargement...</p>
+        </div>
+      </div>
+    );
   }
 
   if (status === "unauthenticated") {
@@ -142,27 +168,49 @@ export default function CheckoutPage() {
                     Entrez l'adresse où vous souhaitez recevoir votre commande
                   </CardDescription>
                 </CardHeader>
-                <form onSubmit={handleSubmit}>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="address">Adresse complète</Label>
-                        <Input
-                          id="address"
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          placeholder="Votre adresse de livraison"
-                          required
-                        />
+                {!orderCreated ? (
+                  <form onSubmit={handleCreateOrder}>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="address">Adresse complète</Label>
+                          <Input
+                            id="address"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            placeholder="Votre adresse de livraison"
+                            required
+                            disabled={isCreatingOrder}
+                          />
+                        </div>
                       </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={isCreatingOrder}
+                      >
+                        {isCreatingOrder ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Création de la commande...
+                          </>
+                        ) : (
+                          "Créer la commande"
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                ) : (
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-green-600 mb-4">
+                      <MapPin className="h-4 w-4" />
+                      <span className="font-medium">Adresse enregistrée</span>
                     </div>
+                    <p className="text-sm text-muted-foreground">{address}</p>
                   </CardContent>
-                  <CardFooter>
-                    <Button type="submit" className="w-full">
-                      Confirmer la commande
-                    </Button>
-                  </CardFooter>
-                </form>
+                )}
               </Card>
             </div>
 
@@ -210,6 +258,22 @@ export default function CheckoutPage() {
                       <span>Total</span>
                       <span>{total.toLocaleString()} FCFA</span>
                     </div>
+                    
+                    {orderCreated && orderId && (
+                      <div className="pt-4 border-t">
+                        <FedaPayButton
+                          orderId={orderId}
+                          amount={total}
+                          className="w-full"
+                          returnUrl={`${window.location.origin}/account/orders`}
+                        >
+                          Payer avec FedaPay
+                        </FedaPayButton>
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          Paiement sécurisé via FedaPay
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardFooter>
               </Card>

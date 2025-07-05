@@ -8,11 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSession } from 'next-auth/react';
-import { Order, OrderStatus } from '@prisma/client';
-import { Package, ArrowLeft } from 'lucide-react';
+import { Order, OrderStatus, PaymentStatus } from '@prisma/client';
+import { Package, ArrowLeft, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { FedaPayButton } from '@/components/fedapay-button';
+
+interface OrderWithItems extends Order {
+  items: any[];
+  payments: any[];
+}
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const router = useRouter();
@@ -59,8 +65,80 @@ export default function OrdersPage() {
     }
   };
 
+  const getPaymentStatusColor = (status: PaymentStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return 'warning';
+      case 'APPROVED':
+        return 'success';
+      case 'FAILED':
+        return 'destructive';
+      case 'CANCELLED':
+        return 'destructive';
+      case 'REFUNDED':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  };
+
+  const getPaymentStatusIcon = (status: PaymentStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return <Clock className="h-3 w-3" />;
+      case 'APPROVED':
+        return <CheckCircle className="h-3 w-3" />;
+      case 'FAILED':
+      case 'CANCELLED':
+        return <XCircle className="h-3 w-3" />;
+      default:
+        return <Clock className="h-3 w-3" />;
+    }
+  };
+
+  const getStatusText = (status: OrderStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return 'En attente';
+      case 'CONFIRMED':
+        return 'Confirmée';
+      case 'SHIPPED':
+        return 'Expédiée';
+      case 'DELIVERED':
+        return 'Livrée';
+      case 'CANCELLED':
+        return 'Annulée';
+      default:
+        return status;
+    }
+  };
+
+  const getPaymentStatusText = (status: PaymentStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return 'En attente';
+      case 'APPROVED':
+        return 'Payée';
+      case 'FAILED':
+        return 'Échoué';
+      case 'CANCELLED':
+        return 'Annulé';
+      case 'REFUNDED':
+        return 'Remboursé';
+      default:
+        return status;
+    }
+  };
+
   if (loading || status === "loading") {
-    return <div>Chargement...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -97,7 +175,7 @@ export default function OrdersPage() {
                 Découvrir les produits
               </Button>
             </div>
-          ) : (
+          ) :
             <div className="space-y-6">
               {orders.map((order) => (
                 <Card key={order.id}>
@@ -105,9 +183,15 @@ export default function OrdersPage() {
                     <CardTitle className="text-lg font-medium">
                       Commande #{order.id.slice(0, 8)}
                     </CardTitle>
-                    <Badge variant={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getPaymentStatusColor(order.paymentStatus)} className="flex items-center gap-1">
+                        {getPaymentStatusIcon(order.paymentStatus)}
+                        {getPaymentStatusText(order.paymentStatus)}
+                      </Badge>
+                      <Badge variant={getStatusColor(order.status)}>
+                        {getStatusText(order.status)}
+                      </Badge>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -118,15 +202,48 @@ export default function OrdersPage() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Total</span>
                         <span className="font-medium">
-                          {order.totalAmount.toLocaleString()} FCFA
+                          {Number(order.totalAmount).toLocaleString()} FCFA
                         </span>
                       </div>
+                      {order.address && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Adresse</span>
+                          <span className="text-right max-w-xs truncate">{order.address}</span>
+                        </div>
+                      )}
+                      {order.items && order.items.length > 0 && (
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-2">Produits commandés :</h4>
+                          <div className="space-y-2">
+                            {order.items.map((item, index) => (
+                              <div key={index} className="flex items-center justify-between text-sm">
+                                <span>{item.product?.name || 'Produit'} × {item.quantity}</span>
+                                <span>{Number(item.unitPrice).toLocaleString()} FCFA</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Bouton de paiement pour les commandes en attente */}
+                      {order.paymentStatus === 'PENDING' && (
+                        <div className="border-t pt-4">
+                          <FedaPayButton
+                            orderId={order.id}
+                            amount={Number(order.totalAmount)}
+                            className="w-full"
+                            returnUrl={`${window.location.origin}/account/orders`}
+                          >
+                            Payer maintenant
+                          </FedaPayButton>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          ))}
+          )}
         </div>
       </main>
       <Footer />

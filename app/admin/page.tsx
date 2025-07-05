@@ -13,7 +13,7 @@ import {
   Users, Store, ShoppingBag, Package, Plus, Edit, Trash, UserPlus, 
   Settings, Building, MapPin, ArrowRight, BarChart, PieChart, 
   Clock, RefreshCw, Download, Filter, ChevronRight, Bell, Moon, 
-  Languages, Database, Save, Trash2, Zap
+  Languages, Database, Save, Trash2, Zap, AlertCircle
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -90,13 +90,26 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     location: "COTONOU"
   });
   
-  const [newMarket, setNewMarket] = useState<Omit<Market, 'id' | 'createdAt' | 'updatedAt' | 'marketSellers' | 'manager'>>({
+  const [newMarket, setNewMarket] = useState<{
+    name: string;
+    location: string;
+    description: string;
+    image: string;
+  }>({
     name: "",
     location: "COTONOU",
     description: "",
-    managerId: "",
     image: ""
   });
+  
+  // État pour la validation du formulaire de marché
+  const [marketErrors, setMarketErrors] = useState<{
+    name?: string;
+    location?: string;
+    description?: string;
+  }>({});
+  const [marketTouched, setMarketTouched] = useState<Record<string, boolean>>({});
+  const [isCreatingMarket, setIsCreatingMarket] = useState(false);
   
   const [updatedMarket, setUpdatedMarket] = useState<Market>({
     id: "",
@@ -146,17 +159,17 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     setFetchError(null);
     try {
       // Chargement des utilisateurs
-      const usersResponse = await fetch('/api/users');
+      const usersResponse = await fetch('/api/users', { credentials: 'include' });
       const usersData = await usersResponse.json();
       setUsers(usersData);
       
       // Chargement des marchés
-      const marketsResponse = await fetch('/api/markets');
+      const marketsResponse = await fetch('/api/markets', { credentials: 'include' });
       const marketsData = await marketsResponse.json();
       setMarkets(marketsData);
       
       // Chargement des produits
-      const productsResponse = await fetch('/api/products');
+      const productsResponse = await fetch('/api/products', { credentials: 'include' });
       const productsData = await productsResponse.json();
       setProducts(productsData);
       
@@ -180,6 +193,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(newUser),
       });
       
@@ -201,14 +215,86 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     }
   };
   
+  // Validation des champs du marché
+  const validateMarketField = (fieldName: string, value: string): string | undefined => {
+    switch (fieldName) {
+      case 'name':
+        if (!value.trim()) return "Le nom du marché est requis";
+        if (value.trim().length < 3) return "Le nom doit contenir au moins 3 caractères";
+        if (value.trim().length > 100) return "Le nom ne peut pas dépasser 100 caractères";
+        return undefined;
+      
+      case 'location':
+        if (!value) return "L'emplacement est requis";
+        return undefined;
+      
+      case 'description':
+        if (!value.trim()) return "La description est requise";
+        if (value.trim().length < 10) return "La description doit contenir au moins 10 caractères";
+        if (value.trim().length > 500) return "La description ne peut pas dépasser 500 caractères";
+        return undefined;
+      
+      default:
+        return undefined;
+    }
+  };
+
+  // Gestion des événements de focus pour le marché
+  const handleMarketFocus = (fieldName: string) => {
+    setMarketTouched(prev => ({ ...prev, [fieldName]: true }));
+  };
+
+  // Gestion des événements de changement pour le marché
+  const handleMarketChange = (fieldName: string, value: string) => {
+    setNewMarket(prev => ({ ...prev, [fieldName]: value }));
+    
+    // Valider le champ
+    const error = validateMarketField(fieldName, value);
+    setMarketErrors(prev => ({ ...prev, [fieldName]: error }));
+  };
+
+  // Gestion des événements de blur pour le marché
+  const handleMarketBlur = (fieldName: string) => {
+    const value = newMarket[fieldName as keyof typeof newMarket] as string;
+    const error = validateMarketField(fieldName, value);
+    setMarketErrors(prev => ({ ...prev, [fieldName]: error }));
+  };
+
+  // Vérifier si le formulaire de marché est valide
+  const isMarketFormValid = () => {
+    return !marketErrors.name && 
+           !marketErrors.location && 
+           !marketErrors.description && 
+           newMarket.name.trim() && 
+           newMarket.location && 
+           newMarket.description.trim();
+  };
+
   const handleCreateMarket = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsCreatingMarket(true);
+
+    // Validation complète avant soumission
+    const allErrors: typeof marketErrors = {};
+    allErrors.name = validateMarketField('name', newMarket.name);
+    allErrors.location = validateMarketField('location', newMarket.location);
+    allErrors.description = validateMarketField('description', newMarket.description);
+    setMarketErrors(allErrors);
+
+    // Vérifier s'il y a des erreurs
+    const hasErrors = Object.values(allErrors).some(error => error !== undefined);
+    if (hasErrors) {
+      setIsCreatingMarket(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/markets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(newMarket),
       });
       
@@ -220,12 +306,18 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
           name: "",
           location: "COTONOU",
           description: "",
-          managerId: "",
           image: ""
         });
+        setMarketErrors({});
+        setMarketTouched({});
+      } else {
+        const errorData = await response.json();
+        console.error('Erreur lors de la création du marché:', errorData);
       }
     } catch (error) {
       console.error('Erreur lors de la création du marché:', error);
+    } finally {
+      setIsCreatingMarket(false);
     }
   };
 
@@ -237,6 +329,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(updatedUser),
       });
       
@@ -260,6 +353,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(updatedMarket),
       });
       
@@ -281,6 +375,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     try {
       const response = await fetch(`/api/users/${deletedUser.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       
       if (response.ok) {
@@ -298,6 +393,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     try {
       const response = await fetch(`/api/markets/${deletedMarket.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       
       if (response.ok) {
@@ -345,7 +441,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Ajouter un utilisateur
+                Ajouter un vendeur
               </Button>
               <Button 
                 onClick={() => setIsCreateMarketDialogOpen(true)}
@@ -1463,102 +1559,150 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
         
         {/* Dialogue d'ajout de marché */}
         <Dialog open={isCreateMarketDialogOpen} onOpenChange={setIsCreateMarketDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Ajouter un marché</DialogTitle>
-              <DialogDescription>Créez un nouveau marché sur la plateforme</DialogDescription>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-2xl font-bold text-center">Créer un marché</DialogTitle>
+              <DialogDescription className="text-center">
+                Ajoutez un nouveau marché à la plateforme
+              </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateMarket} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="market-name">Nom du marché</Label>
-                <Input 
-                  id="market-name" 
-                  value={newMarket.name} 
-                  onChange={(e) => setNewMarket({...newMarket, name: e.target.value})}
-                  placeholder="Marché de Gbégamey" 
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">Emplacement</Label>
-                <Select 
-                  value={newMarket.location}
-                  onValueChange={(value) => setNewMarket({ ...newMarket, location: value as Location })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un emplacement" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((loc) => (
-                      <SelectItem key={loc} value={loc}>
-                        {loc}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="market-description">Description</Label>
-                <Textarea 
-                  id="market-description" 
-                  value={newMarket.description as string} 
-                  onChange={(e) => setNewMarket({...newMarket, description: e.target.value})}
-                  placeholder="Description du marché..." 
-                  rows={3} 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="market-manager">Manager</Label>
-                <Select 
-                  value={newMarket.managerId} 
-                  onValueChange={(value) => setNewMarket({...newMarket, managerId: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users
-                      .filter(user => user.role === 'MANAGER')
-                      .map(manager => (
-                        <SelectItem key={manager.id} value={manager.id || ''}>
-                          {manager.name}
+            <form onSubmit={handleCreateMarket}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="market-name">Nom du marché</Label>
+                  <div className="relative">
+                    <Input 
+                      id="market-name" 
+                      value={newMarket.name} 
+                      onChange={(e) => handleMarketChange('name', e.target.value)}
+                      onFocus={() => handleMarketFocus('name')}
+                      onBlur={() => handleMarketBlur('name')}
+                      placeholder="Marché de Gbégamey" 
+                      className={marketErrors.name ? "border-red-500 focus:border-red-500" : ""}
+                      required 
+                    />
+                    {marketErrors.name && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      </div>
+                    )}
+                  </div>
+                  {marketErrors.name && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {marketErrors.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="market-location">Emplacement</Label>
+                  <Select 
+                    value={newMarket.location}
+                    onValueChange={(value) => handleMarketChange('location', value)}
+                  >
+                    <SelectTrigger className={marketErrors.location ? "border-red-500 focus:border-red-500" : ""}>
+                      <SelectValue placeholder="Sélectionner un emplacement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc} value={loc}>
+                          {loc}
                         </SelectItem>
-                      ))
-                    }
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="market-image">Image du marché</Label>
-                <Input
-                  id="market-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // Optionnel : upload direct ou conversion en URL base64 pour aperçu rapide
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setNewMarket({ ...newMarket, image: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-                {newMarket.image && (
-                  <img
-                    src={newMarket.image}
-                    alt="Aperçu de l'image du marché"
-                    className="mt-2 rounded-md w-24 h-24 object-cover border"
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {marketErrors.location && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {marketErrors.location}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="market-description">Description</Label>
+                  <div className="relative">
+                    <Textarea 
+                      id="market-description" 
+                      value={newMarket.description as string} 
+                      onChange={(e) => handleMarketChange('description', e.target.value)}
+                      onFocus={() => handleMarketFocus('description')}
+                      onBlur={() => handleMarketBlur('description')}
+                      placeholder="Décrivez le marché, ses caractéristiques, ses horaires..." 
+                      rows={4}
+                      className={marketErrors.description ? "border-red-500 focus:border-red-500" : ""}
+                    />
+                    {marketErrors.description && (
+                      <div className="absolute right-3 top-3">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      </div>
+                    )}
+                  </div>
+                  {marketErrors.description && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {marketErrors.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="market-image">Image du marché (optionnel)</Label>
+                  <Input
+                    id="market-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setNewMarket({ ...newMarket, image: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="cursor-pointer"
                   />
-                )}
+                  {newMarket.image && (
+                    <div className="mt-2">
+                      <img
+                        src={newMarket.image}
+                        alt="Aperçu de l'image du marché"
+                        className="rounded-lg w-32 h-24 object-cover border shadow-sm"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" type="button" onClick={() => setIsCreateMarketDialogOpen(false)}>
+
+              <div className="flex flex-col space-y-4 pt-6">
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isCreatingMarket || !isMarketFormValid()}
+                >
+                  {isCreatingMarket ? "Création..." : "Créer le marché"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => {
+                    setIsCreateMarketDialogOpen(false);
+                    setNewMarket({
+                      name: "",
+                      location: "COTONOU",
+                      description: "",
+                      image: ""
+                    });
+                    setMarketErrors({});
+                    setMarketTouched({});
+                  }}
+                  className="w-full"
+                >
                   Annuler
                 </Button>
-                <Button type="submit">Créer</Button>
               </div>
             </form>
           </DialogContent>
@@ -1609,27 +1753,6 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                   placeholder="Description du marché..." 
                   rows={3} 
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="update-market-manager">Manager</Label>
-                <Select 
-                  value={updatedMarket.managerId} 
-                  onValueChange={(value) => setUpdatedMarket({...updatedMarket, managerId: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users
-                      .filter(user => user.role === 'MANAGER')
-                      .map(manager => (
-                        <SelectItem key={manager.id} value={manager.id || ''}>
-                          {manager.name}
-                        </SelectItem>
-                      ))
-                    }
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="market-image">Image du marché</Label>

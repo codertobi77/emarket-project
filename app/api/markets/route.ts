@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { getSession } from "@/lib/auth";
-import { JwtPayload } from "jsonwebtoken";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = 'force-dynamic';
 
@@ -77,8 +77,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session || !["MANAGER", "ADMIN"].includes(session.role)) {
+    const session = await getServerSession(authOptions);
+    console.log("Session récupérée:", session);
+    console.log("Rôle de la session:", session?.user?.role);
+    
+    if (!session || !["MANAGER", "ADMIN"].includes(session.user.role)) {
+      console.log("Accès refusé - Session:", !!session, "Rôle:", session?.user?.role);
       return NextResponse.json(
         { message: "Non autorisé" },
         { status: 403 }
@@ -87,9 +91,9 @@ export async function POST(req: NextRequest) {
 
     const { name, location, description, managerId, image } = await req.json();
 
-    if (!name || !location || !description || !managerId) {
+    if (!name || !location || !description) {
       return NextResponse.json(
-        { message: "Tous les champs sont requis" },
+        { message: "Le nom, la localisation et la description sont requis" },
         { status: 400 }
       );
     }
@@ -101,14 +105,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const data: any = { name, location, description, image };
+    if (managerId) data.managerId = managerId;
+
     const market = await prisma.market.create({
-      data: {
-        name,
-        location,
-        description,
-        managerId,
-        image,
-      },
+      data,
     });
 
     return NextResponse.json(market);
@@ -131,8 +132,8 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session || !["MANAGER", "ADMIN"].includes(session.role)) {
+    const session = await getServerSession(authOptions);
+    if (!session || !["MANAGER", "ADMIN"].includes(session.user.role)) {
       return NextResponse.json(
         { message: "Non autorisé" },
         { status: 403 }
@@ -141,9 +142,9 @@ export async function PUT(req: NextRequest) {
 
     const { name, location, description, managerId , image } = await req.json();
 
-    if (!name || !location || !description || !managerId) {
+    if (!name || !location || !description) {
       return NextResponse.json(
-        { message: "Tous les champs sont requis" },
+        { message: "Le nom, la localisation et la description sont requis" },
         { status: 400 }
       );
     }
@@ -155,15 +156,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    const data: any = { name, location, description, image };
+    if (managerId) data.managerId = managerId;
+
     const market = await prisma.market.update({
       where: { id },
-      data: {
-        name,
-        location,
-        description,
-        managerId,
-        image,
-      },
+      data,
     });
 
     return NextResponse.json(market);
@@ -178,8 +176,8 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session || !["MANAGER", "ADMIN"].includes(session.role)) {
+    const session = await getServerSession(authOptions);
+    if (!session || !["MANAGER", "ADMIN"].includes(session.user.role)) {
       return NextResponse.json(
         { message: "Non autorisé" },
         { status: 403 }

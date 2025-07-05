@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 10);
 
-    // Create user
+    // Create user with default image if none provided
     const newUser = await prisma.user.create({
       data: {
         name,
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         role,
         location,
-        image,
+        image: image || null, // Image is now optional
       },
       select: {
         id: true,
@@ -63,8 +63,6 @@ export async function POST(req: NextRequest) {
           },
         },
       });
-
-      
 
       return NextResponse.json({
         message: "Inscription réussie",
