@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fedaPayService } from '@/lib/fedapay';
 import prisma from '@/lib/db';
+import { PaymentStatus, OrderStatus } from "@prisma/client";
 
 export const dynamic = 'force-dynamic';
 
@@ -42,25 +43,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Mettre à jour le statut du paiement
-    let paymentStatus = 'PENDING';
-    let orderStatus = 'PENDING';
+    let paymentStatus: PaymentStatus = PaymentStatus.PENDING;
+    let orderStatus: OrderStatus = OrderStatus.PENDING;
 
     switch (status) {
       case 'approved':
-        paymentStatus = 'APPROVED';
-        orderStatus = 'CONFIRMED';
+        paymentStatus = PaymentStatus.APPROVED;
+        orderStatus = OrderStatus.CONFIRMED;
         break;
       case 'failed':
-        paymentStatus = 'FAILED';
-        orderStatus = 'CANCELLED';
+        paymentStatus = PaymentStatus.FAILED;
+        orderStatus = OrderStatus.CANCELLED;
         break;
       case 'cancelled':
-        paymentStatus = 'CANCELLED';
-        orderStatus = 'CANCELLED';
+        paymentStatus = PaymentStatus.CANCELLED;
+        orderStatus = OrderStatus.CANCELLED;
         break;
       default:
-        paymentStatus = 'PENDING';
-        orderStatus = 'PENDING';
+        paymentStatus = PaymentStatus.PENDING;
+        orderStatus = OrderStatus.PENDING;
     }
 
     // Mettre à jour le paiement
@@ -148,25 +149,25 @@ export async function GET(request: NextRequest) {
     });
 
     if (payment) {
-      let paymentStatus = 'PENDING';
-      let orderStatus = 'PENDING';
+      let paymentStatus: PaymentStatus = PaymentStatus.PENDING;
+      let orderStatus: OrderStatus = OrderStatus.PENDING;
 
       switch (transaction.status) {
         case 'approved':
-          paymentStatus = 'APPROVED';
-          orderStatus = 'CONFIRMED';
+          paymentStatus = PaymentStatus.APPROVED;
+          orderStatus = OrderStatus.CONFIRMED;
           break;
         case 'failed':
-          paymentStatus = 'FAILED';
-          orderStatus = 'CANCELLED';
+          paymentStatus = PaymentStatus.FAILED;
+          orderStatus = OrderStatus.CANCELLED;
           break;
         case 'cancelled':
-          paymentStatus = 'CANCELLED';
-          orderStatus = 'CANCELLED';
+          paymentStatus = PaymentStatus.CANCELLED;
+          orderStatus = OrderStatus.CANCELLED;
           break;
         default:
-          paymentStatus = 'PENDING';
-          orderStatus = 'PENDING';
+          paymentStatus = PaymentStatus.PENDING;
+          orderStatus = PaymentStatus.PENDING;
       }
 
       // Mettre à jour les statuts

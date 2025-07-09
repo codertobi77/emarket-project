@@ -211,7 +211,9 @@ export async function DELETE(req: NextRequest) {
       }
 
       // Récupérer les IDs des vendeurs associés à ce marché
-      const sellerIds = (marketExists.marketSellers ?? []).map(ms => ms.sellerId);
+      const sellerIds = Array.isArray(marketExists.marketSellers)
+        ? marketExists.marketSellers.map((ms: { sellerId: string }) => ms.sellerId)
+        : [];
       console.log(`Suppression du marché ${id} avec ${sellerIds.length} vendeurs associés: ${sellerIds.join(', ')}`);
 
       // 1. D'abord, supprimer tous les produits associés aux vendeurs du marché

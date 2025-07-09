@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         amount: order.totalAmount,
         currency: 'XOF',
         status: 'PENDING',
-        metadata: transaction,
+        metadata: JSON.parse(JSON.stringify(transaction)),
       },
     });
 
