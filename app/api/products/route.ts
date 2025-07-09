@@ -50,7 +50,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(products);
   } catch (error) {
-    console.error("Error fetching products:", error);
     return NextResponse.json(
       { message: "Erreur lors de la récupération des produits: " + error },
       { status: 500 }
@@ -91,7 +90,6 @@ export async function POST(req: NextRequest) {
       where: { sellerId: session.user.id },
       select: { marketId: true },
     })
-    console.log(seller);
 
     if (!seller) {
       return NextResponse.json(
@@ -118,7 +116,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error("Error creating product:", error);
     return NextResponse.json(
       { message: "Erreur lors de la création du produit" },
       { status: 500 }
@@ -172,7 +169,6 @@ export async function PATCH(req: NextRequest) {
     });
     return NextResponse.json(updatedProduct);
   } catch (error) {
-    console.error("Error updating product:", error);
     return NextResponse.json(
       { message: "Erreur lors de la mise à jour du produit" },
       { status: 500 }
@@ -204,7 +200,6 @@ export async function DELETE(req: NextRequest) {
     });
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
-    console.error("Error deleting product:", error);
     return NextResponse.json(
       { message: "Erreur lors de la suppression du produit" },
       { status: 500 }

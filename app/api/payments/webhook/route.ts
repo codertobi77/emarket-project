@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
     // }
 
     const data = JSON.parse(body);
-    console.log('Webhook FedaPay reçu:', data);
 
     // Extraire les informations de la transaction
     const transactionId = data.id || data.transaction_id;
@@ -38,7 +37,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (!payment) {
-      console.error('Paiement non trouvé pour la transaction:', transactionId);
       return NextResponse.json({ error: 'Paiement non trouvé' }, { status: 404 });
     }
 
@@ -110,11 +108,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`Paiement ${transactionId} mis à jour avec le statut: ${paymentStatus}`);
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur lors du traitement du webhook:', error);
     return NextResponse.json(
       { error: 'Erreur lors du traitement du webhook' },
       { status: 500 }
@@ -190,7 +185,6 @@ export async function GET(request: NextRequest) {
       payment,
     });
   } catch (error) {
-    console.error('Erreur lors de la vérification du paiement:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la vérification du paiement' },
       { status: 500 }

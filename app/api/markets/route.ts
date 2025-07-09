@@ -67,7 +67,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(markets);
   } catch (error) {
-    console.error("Error fetching markets:", error);
     return NextResponse.json(
       { message: "Erreur lors de la récupération des marchés" },
       { status: 500 }
@@ -78,11 +77,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    console.log("Session récupérée:", session);
-    console.log("Rôle de la session:", session?.user?.role);
     
     if (!session || !["MANAGER", "ADMIN"].includes(session.user.role)) {
-      console.log("Accès refusé - Session:", !!session, "Rôle:", session?.user?.role);
       return NextResponse.json(
         { message: "Non autorisé" },
         { status: 403 }
@@ -114,7 +110,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(market);
   } catch (error) {
-    console.error("Error creating market:", error);
     return NextResponse.json(
       { message: "Erreur lors de la création du marché" },
       { status: 500 }
@@ -166,7 +161,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(market);
   } catch (error) {
-    console.error("Error updating market:", error);
     return NextResponse.json(
       { message: "Erreur lors de la mise à jour du marché" },
       { status: 500 }
@@ -214,7 +208,6 @@ export async function DELETE(req: NextRequest) {
       const sellerIds = Array.isArray(marketExists.marketSellers)
         ? marketExists.marketSellers.map((ms: { sellerId: string }) => ms.sellerId)
         : [];
-      console.log(`Suppression du marché ${id} avec ${sellerIds.length} vendeurs associés: ${sellerIds.join(', ')}`);
 
       // 1. D'abord, supprimer tous les produits associés aux vendeurs du marché
       // Trouver les produits associés au marché ou à ses vendeurs
@@ -226,8 +219,6 @@ export async function DELETE(req: NextRequest) {
           ]
         }
       });
-      
-      console.log(`Suppression de ${relatedProducts.length} produits associés au marché ${id}`);
       
       // Supprimer les produits associés
       if (relatedProducts.length > 0) {
@@ -250,7 +241,6 @@ export async function DELETE(req: NextRequest) {
       
       // 2. Supprimer les relations marché-vendeurs
       await tx.$executeRaw`DELETE FROM "market_sellers" WHERE "marketId" = ${id}`;
-      console.log(`Relations marché-vendeurs supprimées pour le marché ${id}`);
       
       // 3. Supprimer les vendeurs associés uniquement à ce marché
       // Vérifier d'abord quels vendeurs ne sont associés qu'à ce marché
@@ -264,8 +254,6 @@ export async function DELETE(req: NextRequest) {
         
         // Si le vendeur n'est associé à aucun autre marché, le supprimer
         if (otherMarkets === 0) {
-          console.log(`Suppression du vendeur ${sellerId} qui n'est associé à aucun autre marché`);
-          
           // Supprimer les commandes liées à ce vendeur
           await tx.orderItem.deleteMany({
             where: {
@@ -279,8 +267,6 @@ export async function DELETE(req: NextRequest) {
               id: sellerId
             }
           });
-        } else {
-          console.log(`Le vendeur ${sellerId} est associé à ${otherMarkets} autres marchés, conservation du compte`);
         }
       }
       
@@ -289,14 +275,11 @@ export async function DELETE(req: NextRequest) {
         where: { id },
       });
     });
-
-    console.log(`Marché ${id} et toutes ses dépendances (produits, vendeurs, relations) supprimés avec succès`);
     return NextResponse.json({
       ...result,
       message: "Marché et toutes ses dépendances supprimés avec succès"
     });
   } catch (error) {
-    console.error("Error deleting market:", error);
     return NextResponse.json(
       { message: `Erreur lors de la suppression du marché: ${error instanceof Error ? error.message : 'Erreur inconnue'}` },
       { status: 500 }

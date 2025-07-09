@@ -9,11 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 export const getNormalizedImagePath = (imagePath: string) => {
   if (!imagePath) return "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
 
-  // Debug log
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line no-console
-    console.log('[normalize] Entrée:', imagePath);
-  }
+
 
   let normalized = imagePath;
 
@@ -90,10 +86,7 @@ export const getNormalizedImagePath = (imagePath: string) => {
     normalized = '/assets/' + normalized.replace(/^\/*/, '');
   }
 
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line no-console
-    console.log('[normalize] Sortie:', normalized);
-  }
+
 
   return normalized;
 };

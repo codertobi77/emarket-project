@@ -25,8 +25,6 @@ export function Header() {
 
   // Détecter le défilement pour ajouter des effets visuels au header
   useEffect(() => {
-    console.log(user);
-    
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };

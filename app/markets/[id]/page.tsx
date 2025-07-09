@@ -69,16 +69,9 @@ export default function MarketProductsPage() {
       const response = await fetch(`/api/products?${params.toString()}`);
       if (!response.ok) throw new Error("Erreur lors du chargement des produits");
       const data = await response.json();
-      console.log('Produits récupérés depuis l\'API pour le marché:', data);
-      
-      // Vérifier les chemins d'images
-      data.forEach((product: Product) => {
-        console.log(`Marché - Produit ${product.name} - Chemin d'image original:`, product.image);
-      });
       setProducts(data);
     } catch (error) {
       setFetchError("Impossible de charger les produits. Veuillez réessayer plus tard.");
-      console.error("Error fetching products:", error);
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +83,7 @@ export default function MarketProductsPage() {
       const data = await response.json();
       setCategories(data);
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      // Handle error silently
     }
   };
 
@@ -165,7 +158,6 @@ export default function MarketProductsPage() {
         variant: "default"
       });
     } catch (error) {
-      console.error("Error adding to cart:", error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de l'ajout au panier",
@@ -180,7 +172,7 @@ export default function MarketProductsPage() {
       const data = await response.json();
       setSellers(data.filter((user: User) => user.role === "SELLER"));
     } catch (error) {
-      console.error("Error fetching sellers:", error);
+      // Handle error silently
     }
   };
 
@@ -245,7 +237,6 @@ export default function MarketProductsPage() {
                     alt={market?.name ? `Photo du marché ${market?.name}` : "Photo de marché local"}
                     className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
-                      console.error(`Erreur de chargement de l'image pour ${market?.name}:`, market?.image);
                       e.currentTarget.src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
                     }}
                   />
@@ -409,7 +400,6 @@ export default function MarketProductsPage() {
                     alt={product.name ? `Photo du produit ${product.name}` : "Photo de produit local"}
                     className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
-                      console.error(`Erreur de chargement de l'image pour ${product.name}:`, product.image);
                       e.currentTarget.src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
                     }}
                   />
