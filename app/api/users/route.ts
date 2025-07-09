@@ -11,25 +11,56 @@ export async function GET(req: NextRequest) {
   const sellerId = searchParams.get("sellerId");
 
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        role: true,
-        location: true,
-        market: true,
-        marketSellers: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      where: {
-        ...(marketId && { marketSellers: { some: { marketId: marketId as string } } }),
-        ...(sellerId && { marketSellers: { some: { sellerId: sellerId as string } } }),
-      },
-    });
-
+    let users = [];
+    if (marketId) {
+      // 1. Récupérer les sellerId pour ce marché
+      const sellerLinks = await prisma.marketSellers.findMany({
+        where: { marketId: marketId as string },
+        select: { sellerId: true }
+      });
+      const sellerIds = sellerLinks.map(link => link.sellerId);
+      // 2. Récupérer les users correspondants
+      users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          location: true,
+          market: true,
+          marketSellers: true,
+          createdAt: true,
+          updatedAt: true,
+          phone: true,
+          isCertified: true,
+        },
+        where: {
+          ...(sellerIds.length > 0 && { id: { in: sellerIds } }),
+          ...(sellerId && { id: sellerId as string }),
+        },
+      });
+    } else {
+      users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          location: true,
+          market: true,
+          marketSellers: true,
+          createdAt: true,
+          updatedAt: true,
+          phone: true,
+          isCertified: true,
+        },
+        where: {
+          ...(sellerId && { id: sellerId as string }),
+        },
+      });
+    }
     return NextResponse.json(users);
   } catch (error) {
     console.error("Error fetching users:", error);

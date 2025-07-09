@@ -37,18 +37,6 @@ export function Header() {
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
-  
-  // Préparer le chemin d'image pour l'avatar de l'utilisateur
-  const getProfileImage = () => {
-    if (!user?.image) return undefined;
-    
-    const imagePath = user.image as string;
-    
-    if (imagePath.startsWith('/users-img/')) return `/assets${imagePath}`;
-    if (imagePath.includes('public/assets/')) return `/${imagePath.split('public/')[1]}`;
-    if (imagePath.includes('assets/')) return `/${imagePath}`;
-    return `/assets/users-img/${imagePath.split('/').pop()}`;
-  };
 
   return (
     <header className={cn(
@@ -172,40 +160,49 @@ export function Header() {
 
       {/* Menu mobile modernisé */}
       {isMenuOpen && (
-        <div className="fixed inset-x-0 top-16 bottom-0 z-50 bg-background/98 backdrop-blur-md md:hidden overflow-y-auto">
+        <div className="fixed inset-x-0 top-16 bottom-0 z-50 bg-background/98 backdrop-blur-md md:hidden overflow-y-auto h-[calc(100vh-4rem)]">
           <div className="container py-8 px-6 flex flex-col divide-y divide-border/30">
             {/* Mobile User Profile - Show only if logged in */}
             {user && (
               <div className="pb-6 mb-4">
                 <div className="flex items-center space-x-4">
-                  <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-md">
-                    <AvatarImage src={getNormalizedImagePath(user?.image) || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-accent/10">
+                  {user?.image && !imgError ? (
+                    <Image
+                      src={getNormalizedImagePath(user?.image)}
+                      alt={user?.name ? `Avatar de ${user?.name}` : 'Avatar utilisateur'}
+                      width={50}
+                      height={50}
+                      className="rounded-full object-cover border-2 border-primary/10"
+                      onError={() => setImgError(true)}
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/10 text-primary text-base border-2 border-primary/10">
                       {user?.name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+                    </div>
+                  )}
                   <div>
                     <h3 className="text-lg font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{user?.name}</h3>
                     <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
                 </div>
                 <div className="mt-4 flex space-x-3">
-                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full justify-start rounded-xl border-primary/20 hover:border-primary hover:bg-primary/5">
-                      <User className="h-4 w-4 mr-2 text-primary" />
-                      Mon compte
-                    </Button>
-                  </Link>
+                    <Link href="/account" onClick={() => setIsMenuOpen(false)} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full justify-start rounded-xl border-primary/20 hover:border-primary hover:bg-primary/5">
+                        <User className="h-4 w-4 mr-2 text-primary" />
+                        Mon compte
+                      </Button>
+                    </Link>
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="w-full justify-start rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                    className="flex-1 space-x-3 w-full justify-start rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors"
                     onClick={() => {
                       signOut();
                       setIsMenuOpen(false);
                     }}
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4 mr-2 text-primary " />
+                      Se déconnecter
                   </Button>
                 </div>
               </div>
@@ -229,10 +226,10 @@ export function Header() {
                   <span className="font-medium">Accueil</span>
                 </Link>
                 <Link
-                  href="/marketplace"
+                  href="/markets"
                   className={cn(
                     "flex items-center rounded-xl px-4 py-3 text-sm transition-all duration-200",
-                    pathname === "/marketplace" 
+                    pathname === "/markets" 
                       ? "bg-primary/10 text-primary font-medium shadow-sm border border-primary/10" 
                       : "text-foreground/80 hover:bg-primary/5 hover:text-primary hover:border-primary/10 border border-transparent"
                   )}
@@ -246,10 +243,10 @@ export function Header() {
                   <Link
                     href="/seller"
                     className={cn(
-                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                      "flex items-center rounded-xl px-4 py-3 text-sm transition-all duration-200",
                       pathname === "/seller" 
-                        ? "bg-primary/10 text-primary font-medium" 
-                        : "text-muted-foreground hover:bg-muted"
+                        ? "bg-primary/10 text-primary font-medium shadow-sm border border-primary/10" 
+                        : "text-foreground/80 hover:bg-primary/5 hover:text-primary hover:border-primary/10 border border-transparent"
                     )}
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -258,19 +255,19 @@ export function Header() {
                   </Link>
                 )}
                 
-                {user && (user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
+                {user && (user?.role === 'ADMIN') && (
                   <Link
-                    href="/manager"
+                    href="/admin"
                     className={cn(
-                      "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
-                      pathname === "/manager" 
-                        ? "bg-primary/10 text-primary font-medium" 
-                        : "text-muted-foreground hover:bg-muted"
+                      "flex items-center rounded-xl px-4 py-3 text-sm transition-all duration-200",
+                      pathname === "/admin" 
+                        ? "bg-primary/10 text-primary font-medium shadow-sm border border-primary/10" 
+                        : "text-foreground/80 hover:bg-primary/5 hover:text-primary hover:border-primary/10 border border-transparent"
                     )}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Settings className="h-4 w-4 mr-3" />
-                    Espace Manager
+                    Espace Administrateur
                   </Link>
                 )}
               </nav>

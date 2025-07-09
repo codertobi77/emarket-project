@@ -5,7 +5,7 @@ import prisma from "@/lib/db";
 export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, role: roleInput, marketId, location, image } = await req.json();
+    const { name, email, password, role: roleInput, marketId, location, image, phone } = await req.json();
 
     // Validate input
     const role = roleInput.toUpperCase() as "BUYER" | "SELLER" | "MANAGER" | "ADMIN";
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
         role,
         location,
         image: image || null, // Image is now optional
+        phone: phone || null, // Ajout du contact téléphonique
       },
       select: {
         id: true,
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
         role: true,
         location: true,
         image: true,
+        phone: true,
         createdAt: true,
         updatedAt: true,
       },

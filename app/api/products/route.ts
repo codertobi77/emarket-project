@@ -1,20 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { Jwt, JwtPayload } from "jsonwebtoken";
 import { log } from "node:util";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest, searchParams: { [key: string]: string }) {
+export async function GET(req: NextRequest) {
   try {
-    const marketId = searchParams.marketId;
-    const category = searchParams.category;
+    const searchParams = new URL(req.url).searchParams;
+    const marketId = searchParams.get("marketId");
+    const category = searchParams.get("category");
+    const sellerId = searchParams.get("sellerId");
 
-    const where = {
-      ...(marketId && { seller: { market: { id: marketId } } }),
-      ...(category && { category: { name: category } }),
-    };
+    const where: any = {};
+    if (marketId) {
+      where.seller = { market: { id: marketId } };
+    }
+    if (category) {
+      where.category = { name: category };
+    }
+    if (sellerId) {
+      where.sellerId = sellerId;
+    }
 
     const products = await prisma.product.findMany({
       where,
@@ -24,18 +33,18 @@ export async function GET(req: NextRequest, searchParams: { [key: string]: strin
           select: {
             seller: {
               select: {
+                id: true,
                 name: true,
                 email: true,
               },
             },
-            market:{
+            market: {
               select: {
                 name: true,
-              }
-            }
+              },
+            },
           },
         },
-        // market: true,
       },
     });
 
@@ -43,21 +52,27 @@ export async function GET(req: NextRequest, searchParams: { [key: string]: strin
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
-      { message: "Erreur lors de la récupération des produits: "+error },
+      { message: "Erreur lors de la récupération des produits: " + error },
       { status: 500 }
     );
   }
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.id) {
+    return NextResponse.json(
+      { message: "Non authentifié" },
+      { status: 401 }
+    );
+  }
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session || !["SELLER", "ADMIN"].includes(session.role)) {
-      return NextResponse.json(
-        { message: "Non autorisé" },
-        { status: 403 }
-      );
-    }
+    // if (!session || !["SELLER", "ADMIN"].includes(session.role)) {
+    //   return NextResponse.json(
+    //     { message: "Non autorisé" },
+    //     { status: 403 }
+    //   );
+    // }
 
     const { name, description, price, stock, category, image } = await req.json();
 
@@ -72,19 +87,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-   // Check if market exists
-    // const marketExists = await prisma.market.findUnique({
-    //   where: { id: marketId },
-    // });
-    // if (!marketExists) {
-    //   return NextResponse.json(
-    //     { message: "Market does not exist" },
-    //     { status: 404 }
-    //   );
-    // }    
-
     const seller = await prisma.marketSellers.findUnique({
-      where: { sellerId: session.id },
+      where: { sellerId: session.user.id },
       select: { marketId: true },
     })
     console.log(seller);
@@ -104,13 +108,11 @@ export async function POST(req: NextRequest) {
         stock,
         image,
         seller: {
-          connect: { sellerId: session.id, marketId: seller.marketId },
+          connect: { sellerId: session.user.id, marketId: seller.marketId },
         },
-        // marketId: seller.marketId,
         category: {
           connect: { id: category },
         },
-        
       },
     });
 
@@ -125,17 +127,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || !["SELLER", "ADMIN"].includes(session.user?.role)) {
+    return NextResponse.json(
+      { message: "Non autorisé" },
+      { status: 403 }
+    );
+  }
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session || !["SELLER", "ADMIN"].includes(session.role)) {
-      return NextResponse.json(
-        { message: "Non autorisé" },
-        { status: 403 }
-      );
-    }
-
     const { id, name, description, price, stock, image, category, marketId } = await req.json();
-
     const product = await prisma.product.findUnique({
       where: { id },
     });
@@ -144,9 +144,7 @@ export async function PATCH(req: NextRequest) {
         { message: "Product does not exist" },
         { status: 404 }
       );
-    }    
-
-    // Only update category if it's provided and has an id
+    }
     let updateData: any = {
       name: name || product.name,
       description: description || product.description,
@@ -154,7 +152,6 @@ export async function PATCH(req: NextRequest) {
       stock: stock ?? product.stock,
       image: image || product.image,
     };
-
     if (category?.id) {
       const categoryExists = await prisma.category.findUnique({
         where: { id: category.id },
@@ -169,23 +166,10 @@ export async function PATCH(req: NextRequest) {
         connect: { id: category.id },
       };
     }
-
-    // Check if market exists
-    // const marketExists = await prisma.market.findUnique({
-    //   where: { id: marketId },
-    // });
-    // if (!marketExists) {
-    //   return NextResponse.json(
-    //     { message: "Market does not exist" },
-    //     { status: 404 }
-    //   );
-    // }
-
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: updateData,
     });
-
     return NextResponse.json(updatedProduct);
   } catch (error) {
     console.error("Error updating product:", error);
@@ -197,17 +181,15 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session || !["SELLER", "ADMIN"].includes(session.user?.role)) {
+    return NextResponse.json(
+      { message: "Non autorisé" },
+      { status: 403 }
+    );
+  }
   try {
-    const session = getSession(req) as JwtPayload;
-    if (!session || !["SELLER", "ADMIN"].includes(session.role)) {
-      return NextResponse.json(
-        { message: "Non autorisé" },
-        { status: 403 }
-      );
-    }
-
     const { id } = await req.json();
-
     const product = await prisma.product.findUnique({
       where: { id },
     });
@@ -217,11 +199,9 @@ export async function DELETE(req: NextRequest) {
         { status: 404 }
       );
     }
-
     await prisma.product.delete({
       where: { id },
     });
-
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("Error deleting product:", error);

@@ -74,7 +74,7 @@ export function ProfileImageUploader({
           }
 
           const data = await response.json();
-          onImageUploaded(data.url);
+          onImageUploaded(data.path);
           
           toast({
             title: "Succès",

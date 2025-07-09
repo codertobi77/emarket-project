@@ -222,9 +222,9 @@ export default function AccountPage() {
         )}
         
         {account?.role === 'SELLER' && isCertified && (
-          <Alert className="mb-6 bg-green-50 border-green-200">
-            <ShieldCheck className="h-5 w-5 text-green-600" />
-            <AlertTitle className="text-green-800 font-medium">Vendeur Certifié</AlertTitle>
+          <Alert className="mb-6 bg-primary/10 border-primary/20">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            <AlertTitle className="text-primary font-medium">Vendeur Certifié</AlertTitle>
             <AlertDescription className="flex flex-col space-y-2">
               <p>Félicitations ! Votre compte est certifié. Profitez de tous les avantages des vendeurs certifiés.</p>
               <div className="mt-2">

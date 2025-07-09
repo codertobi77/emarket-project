@@ -28,7 +28,7 @@ import { Product } from "@/types";
 import { Plus, Edit, Trash, Package, Boxes, AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Category } from "@prisma/client";
-import { cn } from "@/lib/utils";
+import { cn, uploadImage } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +109,7 @@ export default function SellerDashboardPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(newProduct),
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -319,21 +320,13 @@ export default function SellerDashboardPage() {
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const formData = new FormData();
-                            formData.append("image", file);
-                            formData.append("folder", 'products-img');
-                            fetch("/api/upload", {
-                              method: "POST",
-                              body: formData,
+                            uploadImage(file, 'products-img')
+                            .then((data) => {
+                              setNewProduct({
+                                ...newProduct,
+                                image: data as string,
+                              });
                             })
-                              .then((res) => res.json())
-                              .then((data) => {
-                                setNewProduct({
-                                  ...newProduct,
-                                  image: `public/assets/products-img/${data.filename}`,
-                                });
-                              })
-                              .catch((error) => console.error(error));
                           }
                         }}
                         className="mt-1"
@@ -437,15 +430,7 @@ export default function SellerDashboardPage() {
                           <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted">
                             <img
                               src={
-                                product.image
-                                  ? product.image.startsWith('/products-img/')
-                                    ? `/assets${product.image}`
-                                    : product.image.includes('public/assets/')
-                                    ? `/${product.image.split('public/')[1]}`
-                                    : product.image.includes('assets/')
-                                    ? `/${product.image}`
-                                    : `/assets/products-img/${product.image.split('/').pop()}`
-                                  : "/placeholder-product.svg"
+                                product.image as string
                               }
                               alt={product.name}
                               className="h-full w-full object-cover"
@@ -605,21 +590,13 @@ export default function SellerDashboardPage() {
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const formData = new FormData();
-                            formData.append("image", file);
-                            formData.append("folder", 'products-img');
-                            fetch("/api/upload", {
-                              method: "POST",
-                              body: formData,
+                            uploadImage(file, 'products-img')
+                            .then((data) => {
+                              setProductToEdit({
+                                ...productToEdit,
+                                image: data as string,
+                              } as Product);
                             })
-                              .then((res) => res.json())
-                              .then((data) => {
-                                setProductToEdit({
-                                  ...productToEdit,
-                                  image: `public/assets/products-img/${data.filename}`,
-                                } as Product);
-                              })
-                              .catch((error) => console.error(error));
                           }
                         }}
                         className="mt-1"
@@ -628,15 +605,7 @@ export default function SellerDashboardPage() {
                         <div className="mt-2">
                           <p className="text-sm text-muted-foreground mb-1">Image actuelle :</p>
                           <img 
-                            src={
-                              productToEdit.image.startsWith('/products-img/')
-                                ? `/assets${productToEdit.image}`
-                                : productToEdit.image.includes('public/assets/')
-                                ? `/${productToEdit.image.split('public/')[1]}`
-                                : productToEdit.image.includes('assets/')
-                                ? `/${productToEdit.image}`
-                                : `/assets/products-img/${productToEdit.image.split('/').pop()}`
-                            }
+                              src={productToEdit.image as string}
                             alt={productToEdit.name}
                             className="h-20 w-20 object-cover rounded-md border"
                             onError={(e) => {

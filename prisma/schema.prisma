@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,143 +8,128 @@ datasource db {
 }
 
 model User {
-  id             String        @id @default(uuid())
-  name           String
-  email          String        @unique
-  password       String
-  role           Role          @default(BUYER)
-  location       Location?     
-  image          String?       // Champ pour l'image de profil
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  session        String?
-  isCertified    Boolean     @default(false)
-
-  // Relations
-  orders         Order[]       @relation("BuyerOrders")
-  soldItems      OrderItem[]   @relation("SellerItems")
-  market         Market[]
-  marketSellers  MarketSellers[]
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role           @default(BUYER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  image         String?
+  isCertified   Boolean        @default(false)
+  location      Location?
+  session       String?
+  phone         String?
+  marketSellers MarketSellers?
+  market        Market[]
+  soldItems     OrderItem[]    @relation("SellerItems")
+  orders        Order[]        @relation("BuyerOrders")
 
   @@map("users")
 }
 
 model Market {
-  id          String   @id @default(uuid())
-  name        String
-  location    Location @default(COTONOU)
-  description String?
-  managerId   String?  
-  image       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  manager   User?     @relation(fields: [managerId], references: [id])
-  marketSellers MarketSellers[] 
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  managerId     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  image         String?
+  location      Location       @default(COTONOU)
+  marketSellers MarketSellers?
+  manager       User?          @relation(fields: [managerId], references: [id])
 
   @@map("markets")
 }
 
 model MarketSellers {
-  marketId  String @unique
-  market    Market @relation(fields: [marketId], references: [id])
-
-  sellerId String @unique
-  seller   User @relation(fields: [sellerId], references: [id])
-
-  products  Product[]
+  marketId String    @unique
+  sellerId String    @unique
+  market   Market    @relation(fields: [marketId], references: [id])
+  seller   User      @relation(fields: [sellerId], references: [id])
+  products Product[]
 
   @@id([marketId, sellerId])
-  @@map("market_sellers")
   @@unique([sellerId, marketId])
+  @@map("market_sellers")
 }
 
 model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String    @id @default(uuid())
+  name        String    @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   products    Product[]
 
   @@map("categories")
 }
 
 model Product {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   name        String
   description String?
   price       Decimal
-  stock       Int      @default(0)
-  image       String?  
-  sellerId    String?  
-  marketId    String?  
+  stock       Int            @default(0)
+  image       String?
+  sellerId    String?
+  marketId    String?
   categoryId  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  seller      MarketSellers? @relation(fields: [sellerId, marketId], references: [sellerId, marketId])
-  category    Category?   @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   orderItems  OrderItem[]
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  seller      MarketSellers? @relation(fields: [sellerId, marketId], references: [sellerId, marketId])
 
   @@map("products")
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  buyerId     String
-  status      OrderStatus @default(PENDING)
-  totalAmount Decimal     @default(0)
-  address     String?     // Adresse de livraison
-  fedapayTransactionId String? // ID de transaction FedaPay
-  paymentStatus PaymentStatus @default(PENDING)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  // Relations
-  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id])
-  items       OrderItem[]
-  payments    Payment[]
+  id                   String        @id @default(uuid())
+  buyerId              String
+  status               OrderStatus   @default(PENDING)
+  totalAmount          Decimal       @default(0)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  address              String?
+  fedapayTransactionId String?
+  paymentStatus        PaymentStatus @default(PENDING)
+  items                OrderItem[]
+  buyer                User          @relation("BuyerOrders", fields: [buyerId], references: [id])
+  payments             Payment[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id          String   @id @default(uuid())
-  orderId     String
-  productId   String
-  sellerId    String
-  quantity    Int
-  unitPrice   Decimal
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  order       Order    @relation(fields: [orderId], references: [id])
-  product     Product  @relation(fields: [productId], references: [id])
-  seller      User     @relation("SellerItems", fields: [sellerId], references: [id])
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  sellerId  String
+  quantity  Int
+  unitPrice Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  seller    User     @relation("SellerItems", fields: [sellerId], references: [id])
 
   @@map("order_items")
 }
 
 model Payment {
-  id                    String   @id @default(uuid())
-  orderId               String
-  fedapayTransactionId  String   @unique
-  amount                Decimal
-  currency              String   @default("XOF")
-  status                PaymentStatus @default(PENDING)
-  paymentMethod         String?  // Méthode de paiement utilisée
-  metadata              Json?    // Données supplémentaires de FedaPay
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  // Relations
-  order                 Order    @relation(fields: [orderId], references: [id])
+  id                   String        @id @default(uuid())
+  orderId              String
+  fedapayTransactionId String        @unique
+  amount               Decimal
+  currency             String        @default("XOF")
+  status               PaymentStatus @default(PENDING)
+  paymentMethod        String?
+  metadata             Json?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  order                Order         @relation(fields: [orderId], references: [id])
 
   @@map("payments")
 }

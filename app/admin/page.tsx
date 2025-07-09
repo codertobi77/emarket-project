@@ -25,9 +25,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { getNormalizedImagePath } from '@/lib/utils';
 import RoleProtected from "@/components/RoleProtected";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import Image from "next/image";
+import { uploadImage } from "@/lib/utils";
+import type { Category } from "@prisma/client";
+
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -63,13 +68,6 @@ export default function AdminDashboardPage() {
       color: 'from-purple-500 to-indigo-400',
       textColor: 'text-purple-500'
     },
-    {
-      title: 'Localisations',
-      value: locations.length,
-      icon: MapPin,
-      color: 'from-amber-500 to-orange-400',
-      textColor: 'text-amber-500'
-    }
   ];
 
   // État pour les dialogues
@@ -85,9 +83,10 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     name: "",
     email: "",
     password: "",
-    role: "USER",
-    image: "",
-    location: "COTONOU"
+    role: "SELLER",
+    location: "COTONOU",
+    phone: "",
+    marketId: ""
   });
   
   const [newMarket, setNewMarket] = useState<{
@@ -132,10 +131,100 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     email: "",
     password: "",
     role: "SELLER",
-    image: "",
   });
   
   const [deletedUser, setDeletedUser] = useState<User>();
+
+  const [isUploadingMarketImage, setIsUploadingMarketImage] = useState(false);
+  const [marketImageError, setMarketImageError] = useState<string | null>(null);
+
+  // --- État pour les catégories ---
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isCreateCategoryDialogOpen, setIsCreateCategoryDialogOpen] = useState(false);
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
+  const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [editCategory, setEditCategory] = useState<{ id: string, name: string, description: string | null }>({ id: '', name: '', description: '' });
+  const [deleteCategory, setDeleteCategory] = useState<{ id: string, name: string }>({ id: '', name: '' });
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
+  // --- Fetch catégories ---
+  const fetchCategories = async () => {
+    setIsLoadingCategories(true);
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      setCategories(data);
+    } catch (e) {
+      setCategoryError("Erreur lors du chargement des catégories");
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
+
+  // --- Charger les catégories au mount et après chaque action ---
+  useEffect(() => { fetchCategories(); }, []);
+
+  // --- Création catégorie ---
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCategoryError(null);
+    if (!newCategory.name || !newCategory.description) {
+      setCategoryError('Nom et description requis');
+      return;
+    }
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCategory),
+      });
+      if (!res.ok) throw new Error('Erreur API');
+      setIsCreateCategoryDialogOpen(false);
+      setNewCategory({ name: '', description: '' });
+      fetchCategories();
+    } catch (e) {
+      setCategoryError("Erreur lors de la création");
+    }
+  };
+
+  // --- Edition catégorie ---
+  const handleEditCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCategoryError(null);
+    if (!editCategory.name || !editCategory.description) {
+      setCategoryError('Nom et description requis');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/categories?id=${editCategory.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editCategory.name, description: editCategory.description }),
+      });
+      if (!res.ok) throw new Error('Erreur API');
+      setIsEditCategoryDialogOpen(false);
+      setEditCategory({ id: '', name: '', description: '' });
+      fetchCategories();
+    } catch (e) {
+      setCategoryError("Erreur lors de la modification");
+    }
+  };
+
+  // --- Suppression catégorie ---
+  const handleDeleteCategory = async () => {
+    setCategoryError(null);
+    try {
+      const res = await fetch(`/api/categories?id=${deleteCategory.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Erreur API');
+      setIsDeleteCategoryDialogOpen(false);
+      setDeleteCategory({ id: '', name: '' });
+      fetchCategories();
+    } catch (e) {
+      setCategoryError("Erreur lors de la suppression");
+    }
+  };
 
   // Chargement des données
   useEffect(() => {
@@ -187,6 +276,14 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
   // Gestionnaires d'événements
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newUser.marketId) {
+      alert('Veuillez sélectionner un marché.');
+      return;
+    }
+    if (!newUser.phone) {
+      alert('Veuillez renseigner le contact téléphonique.');
+      return;
+    }
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -194,9 +291,13 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(newUser),
+        body: JSON.stringify({
+          ...newUser,
+          role: 'SELLER',
+          marketId: newUser.marketId,
+          phone: newUser.phone,
+        }),
       });
-      
       if (response.ok) {
         const createdUser = await response.json();
         setUsers([...users, createdUser]);
@@ -205,13 +306,14 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
           name: "",
           email: "",
           password: "",
-          role: "USER",
+          role: "SELLER",
           location: "COTONOU",
-          image: ""
+          phone: "",
+          marketId: ""
         });
       }
     } catch (error) {
-      console.error('Erreur lors de la création de l\'utilisateur:', error);
+      console.error('Erreur lors de la création du vendeur:', error);
     }
   };
   
@@ -373,7 +475,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     if (!deletedUser) return;
     
     try {
-      const response = await fetch(`/api/users/${deletedUser.id}`, {
+      const response = await fetch(`/api/users?id=${deletedUser.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -391,7 +493,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     if (!deletedMarket) return;
     
     try {
-      const response = await fetch(`/api/markets/${deletedMarket.id}`, {
+      const response = await fetch(`/api/markets?id=${deletedMarket.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -404,6 +506,20 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
     } catch (error) {
       console.error('Erreur lors de la suppression du marché:', error);
     }
+  };
+
+  // Handler pour l'image du marché (drag'n'drop ou file picker)
+  const handleMarketImageChange = async (file: File) => {
+    if (!file) return;
+    setIsUploadingMarketImage(true);
+    setMarketImageError(null);
+    const path = await uploadImage(file, 'markets-img');
+    if (path) {
+      setNewMarket({ ...newMarket, image: path });
+    } else {
+      setMarketImageError("Erreur lors de l'upload de l'image");
+    }
+    setIsUploadingMarketImage(false);
   };
 
   // Affichage du chargement
@@ -460,7 +576,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
           )}
           
           {/* Cartes de statistiques */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-8">
             {stats.map((stat, index) => (
               <Card key={index} className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all duration-200">
                 <CardHeader className={`bg-gradient-to-r ${stat.color} text-white p-4 flex flex-row items-center justify-between`}>
@@ -497,12 +613,17 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
               <TabsTrigger value="products" className="data-[state=active]:bg-background">
                 Produits
               </TabsTrigger>
+              <TabsTrigger value="categories" className="data-[state=active]:bg-background">
+                Catégories
+              </TabsTrigger>
+              
               <TabsTrigger value="reports" className="data-[state=active]:bg-background">
                 Rapports
               </TabsTrigger>
               <TabsTrigger value="settings" className="data-[state=active]:bg-background">
                 Paramètres
               </TabsTrigger>
+              
             </TabsList>
             
             {/* Onglet Aperçu */}
@@ -567,24 +688,29 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                         <div key={market.id} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-md overflow-hidden">
-                              <img 
-                                src={
-                                  market.image?.startsWith('/markets-img/') ? `/assets${market.image}` :
-                                  market.image?.includes('public/assets/') ? `/${market.image.split('public/')[1]}` :
-                                  market.image?.includes('assets/') ? `/${market.image}` :
-                                  market.image ? `/assets/markets-img/${market.image.split('/').pop()}` :
-                                  "https://images.pexels.com/photos/2292919/pexels-photo-2292919.jpeg"
-                                } 
-                                alt={market.name}
-                                className="w-full h-full object-cover"
+                              {/* <Image
+                                src={getNormalizedImagePath(market.image as string)}
+                                alt={market.name ? `Image de ${market.name}` : 'Image du marché'}
+                                width={56}
+                                height={56}
+                                className="h-20 w-2rounded-full object-cover border-2 border-primary/10"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/2292919/pexels-photo-2292919.jpeg";
                                 }}
-                              />
+                              /> */}
+                              <Avatar>
+                                <AvatarImage 
+                                  src={market.image as string} 
+                                  alt={market.name} 
+                                  onError={(e) => {
+                                    // Utiliser une image par défaut spécifique au rôle de l'utilisateur
+                                    (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/2292919/pexels-photo-2292919.jpeg";
+                                  }}
+                                />
+                              </Avatar>
                             </div>
                             <div>
                               <p className="font-medium">{market.name}</p>
-                              <p className="text-sm text-muted-foreground">{market.location}</p>
                             </div>
                           </div>
                           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
@@ -745,16 +871,16 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                           <TableRow key={user.id}>
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarImage 
-                                src={user.image} 
-                                alt={user.name} 
-                                onError={(e) => {
-                                  // Utiliser une image par défaut spécifique au rôle de l'utilisateur
-                                  e.currentTarget.src = '/assets/users-img/default-avatar.svg';
-                                }}
+                              <Avatar>
+                                <AvatarImage 
+                                  src={user.image as string} 
+                                  alt={user.name} 
+                                  onError={(e) => {
+                                    // Utiliser une image par défaut spécifique au rôle de l'utilisateur
+                                    (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/2292919/pexels-photo-2292919.jpeg";
+                                  }}
                                 />
-                                </Avatar>
+                              </Avatar>
                                 <div>
                                   <p className="font-medium">{user.name}</p>
                                 </div>
@@ -828,7 +954,6 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                       <TableRow>
                         <TableHead>Marché</TableHead>
                         <TableHead>Localisation</TableHead>
-                        <TableHead>Manager</TableHead>
                         <TableHead>Vendeurs</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -846,20 +971,16 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-md overflow-hidden">
-                                  <img 
-                                    src={
-                                      market.image?.startsWith('/markets-img/') ? `/assets${market.image}` :
-                                      market.image?.includes('public/assets/') ? `/${market.image.split('public/')[1]}` :
-                                      market.image?.includes('assets/') ? `/${market.image}` :
-                                      market.image ? `/assets/markets-img/${market.image.split('/').pop()}` :
-                                      "https://images.pexels.com/photos/2292919/pexels-photo-2292919.jpeg"
-                                    } 
-                                    alt={market.name}
-                                    className="w-full h-full object-cover"
+                                <Avatar>
+                                  <AvatarImage 
+                                    src={market.image as string} 
+                                    alt={market.name} 
                                     onError={(e) => {
+                                      // Utiliser une image par défaut spécifique au rôle de l'utilisateur
                                       (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/2292919/pexels-photo-2292919.jpeg";
                                     }}
                                   />
+                              </Avatar>
                                 </div>
                                 <div>
                                   <p className="font-medium">{market.name}</p>
@@ -872,20 +993,6 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                                 <MapPin className="mr-1 h-3 w-3" />
                                 {market.location}
                               </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage 
-                                  src={market.manager?.image} 
-                                  alt={market.manager?.name} 
-                                  onError={(e) => {
-                                    e.currentTarget.src = '/assets/users-img/default-avatar.svg';
-                                  }}
-                                />
-                                </Avatar>
-                                <span>{market.manager?.name || 'Non assigné'}</span>
-                              </div>
                             </TableCell>
                             <TableCell>{market.marketSellers?.length || 0}</TableCell>
                             <TableCell className="text-right">
@@ -971,20 +1078,16 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-md overflow-hidden">
-                                  <img 
-                                    src={
-                                      product.image?.startsWith('/products-img/') ? `/assets${product.image}` :
-                                      product.image?.includes('public/assets/') ? `/${product.image.split('public/')[1]}` :
-                                      product.image?.includes('assets/') ? `/${product.image}` :
-                                      product.image ? `/assets/products-img/${product.image.split('/').pop()}` :
-                                      "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg"
-                                    } 
-                                    alt={product.name}
-                                    className="w-full h-full object-cover"
+                                <Avatar>
+                                  <AvatarImage 
+                                    src={product.image as string} 
+                                    alt={product.name} 
                                     onError={(e) => {
-                                      (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg";
+                                      // Utiliser une image par défaut spécifique au rôle de l'utilisateur
+                                      (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/2292919/pexels-photo-2292919.jpeg";
                                     }}
                                   />
+                              </Avatar>
                                 </div>
                                 <div>
                                   <p className="font-medium">{product.name}</p>
@@ -1360,13 +1463,117 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                 </CardContent>
               </Card>
             </TabsContent>
+            {/* Onglet Catégories */}
+            <TabsContent value="categories" className="space-y-6">
+              <Card className="shadow-md">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Liste des catégories</CardTitle>
+                    <Button onClick={() => setIsCreateCategoryDialogOpen(true)} size="sm" className="bg-gradient-to-r from-yellow-400 to-emerald-400 hover:from-yellow-500 hover:to-emerald-500 transition-all duration-200">
+                      <Plus className="mr-2 h-4 w-4" /> Ajouter
+                    </Button>
+                  </div>
+                  <CardDescription>Gérez les catégories de produits</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingCategories ? (
+                    <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+                  ) : categories.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">Aucune catégorie trouvée</div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nom</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {categories.map((cat) => (
+                          <TableRow key={cat.id}>
+                            <TableCell>{cat.name}</TableCell>
+                            <TableCell>{cat.description}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => { setEditCategory({ ...cat, description: cat.description ?? '' }); setIsEditCategoryDialogOpen(true); }}><Edit className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { setDeleteCategory(cat); setIsDeleteCategoryDialogOpen(true); }}><Trash className="h-4 w-4" /></Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                  {categoryError && <div className="text-red-500 text-sm mt-2">{categoryError}</div>}
+                </CardContent>
+              </Card>
+              {/* Dialog création */}
+              <Dialog open={isCreateCategoryDialogOpen} onOpenChange={setIsCreateCategoryDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Ajouter une catégorie</DialogTitle>
+                    <DialogDescription>Créez une nouvelle catégorie de produit</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateCategory} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cat-name">Nom</Label>
+                      <Input id="cat-name" value={newCategory.name} onChange={e => setNewCategory({ ...newCategory, name: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cat-desc">Description</Label>
+                      <Textarea id="cat-desc" value={newCategory.description} onChange={e => setNewCategory({ ...newCategory, description: e.target.value })} required />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button variant="outline" type="button" onClick={() => setIsCreateCategoryDialogOpen(false)}>Annuler</Button>
+                      <Button type="submit">Créer</Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              {/* Dialog édition */}
+              <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Modifier la catégorie</DialogTitle>
+                    <DialogDescription>Modifiez les informations de la catégorie</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleEditCategory} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-cat-name">Nom</Label>
+                      <Input id="edit-cat-name" value={editCategory.name} onChange={e => setEditCategory({ ...editCategory, name: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-cat-desc">Description</Label>
+                      <Textarea id="edit-cat-desc" value={editCategory.description ?? ''} onChange={e => setEditCategory({ ...editCategory, description: e.target.value })} required />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button variant="outline" type="button" onClick={() => setIsEditCategoryDialogOpen(false)}>Annuler</Button>
+                      <Button type="submit">Enregistrer</Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              {/* Dialog suppression */}
+              <Dialog open={isDeleteCategoryDialogOpen} onOpenChange={setIsDeleteCategoryDialogOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                  <DialogHeader>
+                    <DialogTitle>Supprimer la catégorie</DialogTitle>
+                    <DialogDescription>Cette action est irréversible.</DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">Voulez-vous vraiment supprimer la catégorie <span className="font-semibold">{deleteCategory.name}</span> ?</div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" type="button" onClick={() => setIsDeleteCategoryDialogOpen(false)}>Annuler</Button>
+                    <Button type="button" variant="destructive" onClick={handleDeleteCategory}>Supprimer</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </TabsContent>
           </Tabs>
         </main>
         <Footer />
         {/* Dialogues modaux */}
         {/* Dialogue de mise à jour d'utilisateur */}
         <Dialog open={isUpdateUserDialogOpen} onOpenChange={setIsUpdateUserDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] max-h-screen overflow-y-auto flex flex-col">
             <DialogHeader>
               <DialogTitle>Modifier l'utilisateur</DialogTitle>
               <DialogDescription>Modifiez les informations de l'utilisateur</DialogDescription>
@@ -1448,10 +1655,10 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
 
         {/* Dialogue d'ajout d'utilisateur */}
         <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] max-h-screen overflow-y-auto flex flex-col">
             <DialogHeader>
-              <DialogTitle>Ajouter un utilisateur</DialogTitle>
-              <DialogDescription>Créez un nouvel utilisateur sur la plateforme</DialogDescription>
+              <DialogTitle>Ajouter un vendeur</DialogTitle>
+              <DialogDescription>Créez un nouveau vendeur sur la plateforme</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="space-y-2">
@@ -1487,21 +1694,15 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Rôle</Label>
-                <Select 
-                  value={newUser.role} 
-                  onValueChange={(value) => setNewUser({...newUser, role: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un rôle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADMIN">Administrateur</SelectItem>
-                    <SelectItem value="MANAGER">Manager</SelectItem>
-                    <SelectItem value="SELLER">Vendeur</SelectItem>
-                    <SelectItem value="BUYER">Acheteur</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="phone">Contact téléphonique</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  placeholder="ex: +229 90 00 00 00"
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Emplacement</Label>
@@ -1522,31 +1723,25 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="user-image">Image du marché</Label>
-                <Input
-                  id="user-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // Optionnel : upload direct ou conversion en URL base64 pour aperçu rapide
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setNewUser({ ...newUser, image: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-                {newUser.image && (
-                  <img
-                    src={newUser.image}
-                    alt="Aperçu de l'image du marché"
-                    className="mt-2 rounded-md w-24 h-24 object-cover border"
-                  />
-                )}
+                <Label htmlFor="market">Marché</Label>
+                <Select
+                  value={newUser.marketId}
+                  onValueChange={(value) => setNewUser({ ...newUser, marketId: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un marché" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {markets.map((market) => (
+                      <SelectItem key={market.id} value={market.id}>
+                        {market.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            
               <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" type="button" onClick={() => setIsCreateUserDialogOpen(false)}>
                   Annuler
@@ -1559,7 +1754,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
         
         {/* Dialogue d'ajout de marché */}
         <Dialog open={isCreateMarketDialogOpen} onOpenChange={setIsCreateMarketDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-screen overflow-y-auto flex flex-col">
             <DialogHeader className="space-y-1">
               <DialogTitle className="text-2xl font-bold text-center">Créer un marché</DialogTitle>
               <DialogDescription className="text-center">
@@ -1649,31 +1844,48 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
 
                 <div className="space-y-2">
                   <Label htmlFor="market-image">Image du marché (optionnel)</Label>
-                  <Input
-                    id="market-image"
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
+                  <div
+                    id="market-image-dropzone"
+                    className="border-2 border-dashed border-primary/40 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition hover:border-primary/80 bg-muted/30"
+                    onDragOver={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const file = e.dataTransfer.files?.[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setNewMarket({ ...newMarket, image: reader.result as string });
-                        };
-                        reader.readAsDataURL(file);
+                        handleMarketImageChange(file);
                       }
                     }}
-                    className="cursor-pointer"
-                  />
-                  {newMarket.image && (
-                    <div className="mt-2">
+                    onClick={() => {
+                      document.getElementById('market-image-input')?.click();
+                    }}
+                    style={{ minHeight: '96px' }}
+                  >
+                    <Input
+                      id="market-image-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleMarketImageChange(file);
+                        }
+                      }}
+                    />
+                    {newMarket.image ? (
                       <img
                         src={newMarket.image}
                         alt="Aperçu de l'image du marché"
                         className="rounded-lg w-32 h-24 object-cover border shadow-sm"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Glissez-déposez une image ici ou cliquez pour sélectionner un fichier</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1710,7 +1922,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
         
         {/* Dialogue de modification de marché */}
         <Dialog open={isUpdateMarketDialogOpen} onOpenChange={setIsUpdateMarketDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] max-h-screen overflow-y-auto flex flex-col">
             <DialogHeader>
               <DialogTitle>Modifier le marché</DialogTitle>
               <DialogDescription>Modifiez les informations du marché</DialogDescription>
@@ -1792,7 +2004,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
         
         {/* Dialogue de suppression de marché */}
         <Dialog open={isDeleteMarketDialogOpen} onOpenChange={setIsDeleteMarketDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] max-h-screen overflow-y-auto flex flex-col">
             <DialogHeader>
               <DialogTitle>Supprimer le marché</DialogTitle>
               <DialogDescription>
@@ -1814,13 +2026,13 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
           </DialogContent>
         </Dialog>
 
-        {/* Dialogue de suppression de marché */}
+        {/* Dialogue de suppression de vendeur */}
         <Dialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] max-h-screen overflow-y-auto flex flex-col">
             <DialogHeader>
-              <DialogTitle>Supprimer l'utilisateur</DialogTitle>
+              <DialogTitle>Supprimer le vendeur</DialogTitle>
               <DialogDescription>
-                Êtes-vous sûr de vouloir supprimer l'utilisateur ? Cette action est irréversible.
+                Êtes-vous sûr de vouloir supprimer le vendeur ? Cette action est irréversible.
               </DialogDescription>
             </DialogHeader>
             <div className="bg-muted/50 p-4 rounded-md mb-4">

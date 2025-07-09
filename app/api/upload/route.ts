@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { getServerSession } from 'next-auth';
@@ -49,13 +50,17 @@ export async function POST(request: NextRequest) {
 
     // Définir le chemin de sauvegarde
     const uploadDir = join(process.cwd(), 'public', 'assets', folder);
+    // Créer le dossier s'il n'existe pas
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
     const filePath = join(uploadDir, filename);
     // Sauvegarder le fichier
     await writeFile(filePath, new Uint8Array(buffer));
 
-    // Retourner le chemin de l'image
-    const url = `/assets/${folder}/${filename}`;
-    return NextResponse.json({ url });
+    // Retourner uniquement le chemin d'enregistrement
+    const path = `/assets/${folder}/${filename}`;
+    return NextResponse.json({ path });
   } catch (error) {
     console.error('Erreur lors du téléchargement:', error);
     return NextResponse.json(

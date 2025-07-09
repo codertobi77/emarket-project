@@ -14,6 +14,7 @@ export interface User {
   role: Role; // User role in the system
   location?: Location | null; // User's location
   image?: string | null; // Schema: String?
+  phone?: string | null; // Contact téléphonique
   createdAt?: Date;
   updatedAt?: Date;
   session?: string | null; // Added from schema

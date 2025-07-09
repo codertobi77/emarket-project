@@ -225,11 +225,11 @@ export default function MarketProductsPage() {
       <div className="relative overflow-hidden bg-gradient-to-r from-primary to-accent py-12 md:py-16">
         {/* Pattern d'arrière-plan */}
         <div className="absolute inset-0 bg-[url('/assets/pattern.svg')] bg-repeat opacity-5"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-accent/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-accent/20 dark:from-transparent dark:via-background/80 dark:to-background/90"></div>
         
         {/* Formes décoratives */}
-        <div className="absolute top-20 right-10 w-72 h-72 bg-white/10 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full filter blur-3xl opacity-20"></div>
+        <div className="absolute top-20 right-10 w-72 h-72 bg-white/10 dark:bg-background/40 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 dark:bg-background/40 rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
         
         <div className="container relative z-10">
           <Link href="/markets" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors group">
@@ -241,7 +241,7 @@ export default function MarketProductsPage() {
             {/* Image du marché */}
             <div className="w-full md:w-1/3 lg:w-1/4 aspect-square rounded-2xl overflow-hidden border-4 border-white/20 shadow-xl relative">
             <img
-                    src={getNormalizedImagePath(market?.image || "")}
+                    src={market?.image as string}
                     alt={market?.name ? `Photo du marché ${market?.name}` : "Photo de marché local"}
                     className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
@@ -395,7 +395,7 @@ export default function MarketProductsPage() {
             ))
           ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
-              <Card key={product.id} className="flex flex-col h-full overflow-hidden group hover:-translate-y-1 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 border-border/40">
+              <Card key={product.id} className="flex flex-col h-full overflow-hidden group hover:-translate-y-1 transition-all duration-300 bg-muted dark:bg-background/90 border border-border hover:shadow-lg hover:shadow-primary/10">
                 <div className="aspect-square relative overflow-hidden">
                   {product.stock === 0 && (
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
@@ -405,7 +405,7 @@ export default function MarketProductsPage() {
                     </div>
                   )}
                   <img
-                    src={getNormalizedImagePath(product.image || "")}
+                    src={product.image as string}
                     alt={product.name ? `Photo du produit ${product.name}` : "Photo de produit local"}
                     className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => {
@@ -415,20 +415,26 @@ export default function MarketProductsPage() {
                   />
                 </div>
                 <CardContent className="flex-1 p-4">
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
+                  <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors text-foreground">{product.name}</h3>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {product.description}
                   </p>
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-lg font-bold text-primary">{product.price as number} FCFA</p>
-                    <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
+                    <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20 dark:bg-emerald-900/30 dark:text-emerald-300">
                       Stock: {product.stock}
                     </Badge>
                   </div>
                   {product.seller && (
                     <p className="text-sm text-muted-foreground flex items-center">
                       <UserIcon className="h-3 w-3 mr-1 text-primary/70" />
-                      Vendeur: {product.seller.seller.name}
+                      Vendeur: {" "}
+                      <Link
+                        href={`/sellers/${product.seller.seller.id}`}
+                        className="underline hover:text-primary font-medium transition-colors"
+                      >
+                        {product.seller.seller.name}
+                      </Link>
                     </p>
                   )}
                 </CardContent>
