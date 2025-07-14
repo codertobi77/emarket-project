@@ -1228,17 +1228,17 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                     <div className="grid grid-cols-2 gap-4 mt-6">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                        <span className="text-sm">Paris</span>
+                        <span className="text-sm">Gbégamey</span>
                         <span className="text-sm font-semibold ml-auto">45%</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                        <span className="text-sm">Lyon</span>
+                        <span className="text-sm">Mènontin</span>
                         <span className="text-sm font-semibold ml-auto">25%</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                        <span className="text-sm">Marseille</span>
+                        <span className="text-sm">Ganhi</span>
                         <span className="text-sm font-semibold ml-auto">20%</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1252,7 +1252,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
               </div>
               
               {/* Tableau d'historique des transactions */}
-              <Card className="shadow-md">
+              {/*<Card className="shadow-md">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle>Historique des transactions</CardTitle>
@@ -1312,7 +1312,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </Card>*/}
             </TabsContent>
             
             {/* Onglet Paramètres */}
