@@ -9,14 +9,12 @@ eMarket est une plateforme web moderne de gestion de marchés locaux développé
 ### 👥 Gestion des Utilisateurs
 - **Acheteurs** : Parcourir les produits, gérer le panier, passer des commandes
 - **Vendeurs** : Gérer leurs produits, suivre les ventes, uploader des images
-- **Gestionnaires** : Superviser les marchés, gérer les catégories
 - **Administrateurs** : Gestion complète de la plateforme
 
 ### 🏪 Gestion des Marchés
 - Création et gestion de marchés locaux
 - Attribution de vendeurs aux marchés
 - Gestion des images et descriptions
-- Localisation géographique (Cotonou, Bohicon, Porto-Novo)
 
 ### 📦 Gestion des Produits
 - Catalogue de produits avec images
@@ -118,7 +116,6 @@ emarket-project/
 │   ├── auth/              # Pages d'authentification
 │   ├── admin/             # Dashboard administrateur
 │   ├── seller/            # Dashboard vendeur
-│   ├── manager/           # Dashboard gestionnaire
 │   └── markets/           # Pages des marchés
 ├── components/            # Composants React réutilisables
 │   ├── ui/               # Composants UI (shadcn/ui)
