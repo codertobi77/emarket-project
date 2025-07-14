@@ -725,7 +725,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
               </div>
               
               {/* Statistiques d'activité */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <Card className="shadow-md hover:shadow-lg transition-all duration-200">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -766,7 +766,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                   </CardContent>
                 </Card>
                 
-                <Card className="shadow-md hover:shadow-lg transition-all duration-200">
+                {/*<Card className="shadow-md hover:shadow-lg transition-all duration-200">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Performance des marchés</CardTitle>
@@ -827,7 +827,7 @@ const [isUpdateUserDialogOpen, setIsUpdateUserDialogOpen] = useState(false);
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </Card>*/}
               </div>
             </TabsContent>
             
