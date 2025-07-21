@@ -75,7 +75,9 @@ export default function SellerDashboardPage() {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/products");
+      const params = new URLSearchParams();
+      if (session?.user.id) params.append("sellerId", session?.user.id as string);
+      const response = await fetch(`/api/products?${params.toString()}`);
       const data = await response.json();
       console.log('Produits récupérés depuis l\'API dans seller:', data);
       // Vérifier les chemins d'images

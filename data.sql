@@ -32,6 +32,10 @@ INSERT INTO public._prisma_migrations (id, checksum, finished_at, migration_name
 --
 
 INSERT INTO public.categories (id, name, description, "createdAt", "updatedAt") VALUES ('48d14323-385d-428c-8b20-027886682b01', 'Condiments', 'Condiments de cuisine', '2025-07-09 11:48:41.651', '2025-07-09 11:48:41.651');
+INSERT INTO public.categories (id, name, description, "createdAt", "updatedAt") VALUES ('a7b630bf-ab4b-4174-864e-ac887aaaca26', 'Fruits et Légumes', 'Fruits et Légumes', '2025-07-20 17:37:09.507', '2025-07-20 17:37:09.507');
+INSERT INTO public.categories (id, name, description, "createdAt", "updatedAt") VALUES ('ec843ad3-bac6-4dab-8b74-d0ae2d1c55d8', 'Electronique', 'Electronique', '2025-07-20 17:37:32.25', '2025-07-20 17:37:32.25');
+INSERT INTO public.categories (id, name, description, "createdAt", "updatedAt") VALUES ('3c6abe97-2dff-4b2d-af6a-1c5c1d4f02da', 'Boissons et Rafraichissements', 'Boissons et Rafraichissements', '2025-07-20 17:38:01.044', '2025-07-20 17:38:01.044');
+INSERT INTO public.categories (id, name, description, "createdAt", "updatedAt") VALUES ('af6ad2b4-5bc6-4be2-8442-7dc1468f0847', 'Matériel et Ingrédients de cuisine', 'Matériel et Ingrédients de cuisine', '2025-07-20 17:39:29.937', '2025-07-20 17:39:29.937');
 
 
 --
@@ -40,6 +44,7 @@ INSERT INTO public.categories (id, name, description, "createdAt", "updatedAt") 
 
 INSERT INTO public.users (id, name, email, password, role, "createdAt", "updatedAt", image, "isCertified", location, session, phone) VALUES ('b3a9782d-06b3-4492-9bf2-1a518f853899', 'Sudoer', 'sudoer@gmail.com', '$2b$10$qKuxiIPJIMOEcSySacMNSecIeknQeb4gq4jPQof5YeSGVrjD23FVK', 'ADMIN', '2025-07-09 10:27:24.426', '2025-07-09 10:35:25.268', '/assets/users-img/a0782398-4876-4285-9ac8-0917f33e0026.jpg', false, 'COTONOU', NULL, NULL);
 INSERT INTO public.users (id, name, email, password, role, "createdAt", "updatedAt", image, "isCertified", location, session, phone) VALUES ('c28bde6b-3fdf-4724-a521-f5d2e33255f4', 'Assiba Djèdémin', 'assiba@gmail.com', '$2a$10$mzlgjF66OzmzSI.GP9m9XOh2y3mW9vaH0vkJlnefSLBcvdaPlWMBi', 'SELLER', '2025-07-09 11:27:08.849', '2025-07-09 11:34:04.728', '/assets/users-img/1a2313b1-ca56-43bc-af57-b8cb58f3adba.jpg', true, 'COTONOU', NULL, '+229 0192417093');
+INSERT INTO public.users (id, name, email, password, role, "createdAt", "updatedAt", image, "isCertified", location, session, phone) VALUES ('75e7c1b2-6d5b-4d05-b7a1-ca31aee5d097', 'Ets Chez Fifamin', 'fifamin@gmail.com', '$2a$10$cNA.nBNzrgNTGqgBVjthw.NJ3tyTOag2pOY.XOd3F.lIvp9kOa.GW', 'SELLER', '2025-07-20 17:29:47.474', '2025-07-20 17:33:04.847', '/assets/users-img/8909e0f9-b17c-4d22-b12e-6470a885f45a.png', false, 'COTONOU', NULL, '+229 0142197118');
 
 
 --
@@ -55,6 +60,7 @@ INSERT INTO public.markets (id, name, description, "managerId", "createdAt", "up
 --
 
 INSERT INTO public.market_sellers ("marketId", "sellerId") VALUES ('15cf8a3d-04f4-4bb2-8d04-1f929ac908f5', 'c28bde6b-3fdf-4724-a521-f5d2e33255f4');
+INSERT INTO public.market_sellers ("marketId", "sellerId") VALUES ('72f91089-35cf-4e99-89f8-0114026f1729', '75e7c1b2-6d5b-4d05-b7a1-ca31aee5d097');
 
 
 --
@@ -68,6 +74,7 @@ INSERT INTO public.market_sellers ("marketId", "sellerId") VALUES ('15cf8a3d-04f
 --
 
 INSERT INTO public.products (id, name, description, price, stock, image, "sellerId", "marketId", "categoryId", "createdAt", "updatedAt") VALUES ('25677489-cccc-4751-939f-f3d5db93cf8c', 'Tomate (pack)', 'Tomate fraîche en pack', 500.000000000000000000000000000000, 50, '/assets/products-img/6fe04386-617a-4a84-bdf1-95625c710a23.jpeg', 'c28bde6b-3fdf-4724-a521-f5d2e33255f4', '15cf8a3d-04f4-4bb2-8d04-1f929ac908f5', '48d14323-385d-428c-8b20-027886682b01', '2025-07-09 12:15:08.883', '2025-07-09 12:22:00.195');
+INSERT INTO public.products (id, name, description, price, stock, image, "sellerId", "marketId", "categoryId", "createdAt", "updatedAt") VALUES ('a8c0afaa-435e-45ff-9a68-83afb5ab114f', 'Ananas', 'Ananas bien fraîche', 200.000000000000000000000000000000, 50, '/assets/products-img/4557071a-eac6-4cc0-a996-0f360ce9e54e.jpeg', '75e7c1b2-6d5b-4d05-b7a1-ca31aee5d097', '72f91089-35cf-4e99-89f8-0114026f1729', 'a7b630bf-ab4b-4174-864e-ac887aaaca26', '2025-07-20 17:50:57.703', '2025-07-20 17:50:57.703');
 
 
 --

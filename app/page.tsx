@@ -135,7 +135,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
               {/* Buyers */}
               <div className="group hover:-translate-y-2 transition-all duration-300">
                 <div className="bg-card/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-border h-full relative overflow-hidden">
@@ -176,7 +176,7 @@ export default function Home() {
               </div>
               
               {/* Managers */}
-              <div className="group hover:-translate-y-2 transition-all duration-300">
+              {/* <div className="group hover:-translate-y-2 transition-all duration-300">
                 <div className="bg-card/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-border h-full relative overflow-hidden">
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-accent/0 via-accent/10 to-accent/0 -translate-x-full group-hover:translate-x-full transition-all duration-1000"></div>
                   
@@ -192,17 +192,16 @@ export default function Home() {
                     Supervisez les activités du marché, générez des rapports détaillés et optimisez les opérations quotidiennes.
                   </p>
                 </div>
-              </div>
+              </div> */}
               
               {/* Administrators */}
               <div className="group hover:-translate-y-2 transition-all duration-300">
                 <div className="bg-card/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-border h-full relative overflow-hidden">
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-chart-3/0 via-chart-3/10 to-chart-3/0 -translate-x-full group-hover:translate-x-full transition-all duration-1000"></div>
                   
-
                   <div className="mb-6 relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-secondary to-secondary/70 rounded-full opacity-30 blur-xl -z-10 scale-90 group-hover:scale-110 transition-transform duration-500"></div>
-                    <div className="bg-gradient-to-br from-secondary to-secondary/70 p-4 rounded-2xl inline-flex">
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent to-accent/70 rounded-full opacity-30 blur-xl -z-10 scale-90 group-hover:scale-110 transition-transform duration-500"></div>
+                    <div className="bg-gradient-to-br from-accent to-accent/70 p-4 rounded-2xl inline-flex">
                       <ShieldCheck className="h-8 w-8 text-white" />
                     </div>
                   </div>
